@@ -163,6 +163,15 @@ def main():
     print(f"Output → {outputs_dir / f'{stem}_{ts}.txt'}")
     print(f"Log    → {log_path}")
 
+    # Keep the batch+sync cost ledger current after every synchronous run too
+    # (batch_transcribe.py auto-updates it for batch runs; this closes the sync gap).
+    try:
+        import batch_transcribe
+        batch_transcribe._safe_update_ledger()
+        print("Ledger → updated")
+    except Exception as exc:
+        print(f"Ledger → skipped ({exc})")
+
     return outputs_dir, stem, ts
 
 if __name__ == "__main__":

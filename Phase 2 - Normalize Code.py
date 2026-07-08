@@ -75,6 +75,13 @@ like "gpt-5.5_effort-high_CI-on")
   X.<config>.normalized.txt   UTF-8 plain text — the normalized version
   X.<config>.report.json      flags + provenance + symbol counts (sidecar)
 
+  By default only the literal .txt and the .report.json are written (not
+  the normalized .txt). Pass --normalized (CLI) or formats=(...)
+  (process_file()) to also get it. Conversion always computes both
+  profiles either way, so the returned report dict (n_flags,
+  symbol_counts, etc.) is complete regardless of which files get written
+  to disk.
+
   <config> is the name of the input file's parent folder, carried into the
   filename so outputs stay traceable to their source config once moved.
 
@@ -325,8 +332,23 @@ def convert(text: str, form: str = "NFC"):
     return versions, flags, counts
 
 
-def process_file(in_path: Path, outdir: Path | None = None, form: str = "NFC") -> dict:
-    """Normalize one file; write <stem>.<profile>.txt and <stem>.report.json."""
+# Which outputs process_file() writes to disk when the caller doesn't ask
+# for specific ones. Conversion always computes both profiles (flags/counts
+# are derived from NORMALIZED) regardless of what's written.
+OUTPUT_FORMATS = ("literal", "normalized", "report")
+DEFAULT_OUTPUT_FORMATS = ("literal", "report")
+
+
+def process_file(in_path: Path, outdir: Path | None = None, form: str = "NFC",
+                  formats: tuple[str, ...] = DEFAULT_OUTPUT_FORMATS) -> dict:
+    """Normalize one file; write <stem>.<profile>.txt for each profile named
+    in `formats`, plus <stem>.report.json if "report" is in `formats`.
+
+    Default is literal-only. The returned report dict always has the full
+    flags/counts/outputs data regardless of `formats`, so callers that only
+    need the summary (e.g. batch_transcribe.py's --run-phase2) still work
+    even when the .report.json file itself isn't written.
+    """
     in_path = Path(in_path)
     outdir = Path(outdir) if outdir else in_path.parent
     outdir.mkdir(parents=True, exist_ok=True)
@@ -342,6 +364,8 @@ def process_file(in_path: Path, outdir: Path | None = None, form: str = "NFC") -
     base_name = f"{stem}.{config_tag}"
     written = []
     for name, out in versions.items():
+        if name not in formats:
+            continue
         p = outdir / f"{base_name}.{name}.txt"
         p.write_text(out, encoding="utf-8")
         written.append(str(p))
@@ -357,9 +381,11 @@ def process_file(in_path: Path, outdir: Path | None = None, form: str = "NFC") -
         "flags": flags,
         "outputs": written,
     }
-    report_path = outdir / f"{base_name}.report.json"
-    report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2),
-                           encoding="utf-8")
+    if "report" in formats:
+        report_path = outdir / f"{base_name}.report.json"
+        report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2),
+                               encoding="utf-8")
+        written.append(str(report_path))
     return report
 
 
@@ -447,6 +473,9 @@ def main(argv=None) -> int:
                     help="output directory (default: alongside each input)")
     ap.add_argument("--form", default="NFC", choices=["NFC", "NFD"],
                     help="Unicode normalization form (default NFC)")
+    ap.add_argument("--literal", action="store_true", help="write the literal .txt (default if no format flags given)")
+    ap.add_argument("--normalized", action="store_true", help="write the normalized .txt")
+    ap.add_argument("--report", action="store_true", help="write the .report.json sidecar (default if no format flags given)")
     ap.add_argument("--selftest", action="store_true",
                     help="run built-in checks and exit")
     args = ap.parse_args(argv)
@@ -456,10 +485,14 @@ def main(argv=None) -> int:
     if not args.inputs:
         ap.print_help()
         return 1
+
+    requested = tuple(f for f in OUTPUT_FORMATS if getattr(args, f))
+    formats = requested or DEFAULT_OUTPUT_FORMATS  # no format flags -> literal only
+
     for path in args.inputs:
-        report = process_file(path, outdir=args.outdir, form=args.form)
-        print(f"{path}: {report['n_flags']} flag(s); wrote "
-              f"{', '.join(Path(o).name for o in report['outputs'])}")
+        report = process_file(path, outdir=args.outdir, form=args.form, formats=formats)
+        outputs_desc = ', '.join(Path(o).name for o in report['outputs']) or '(nothing written)'
+        print(f"{path}: {report['n_flags']} flag(s); wrote {outputs_desc}")
     return 0
 
 
