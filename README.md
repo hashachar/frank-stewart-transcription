@@ -64,24 +64,45 @@ Key flags: `--model`, `--effort` (`none|low|medium|high|xhigh`), `--no-ci`
 Same Step 1 transcription, but for many images at once via the OpenAI Batch
 API (results within 24h, ~50% cheaper than `transcribe.py`). Runs as a
 five-stage pipeline; state is persisted to `batch_jobs/<job-name>.json` so
-each stage can be run independently and re-run safely:
+each stage can be run independently and re-run safely.
 
-1. `prepare` — upload images to the Files API, build the batch JSONL, save
-   job state
-2. `submit` — upload the JSONL and create the batch
-3. `status` — poll progress (safe to run repeatedly)
-4. `fetch` — download results into `outputs/<config>/`; optionally chain
-   into Step 2 normalization with `--run-phase2` (imports
-   `process_file` directly from `Phase 2 - Normalize Code.py`)
-5. `retry` — resubmit only the requests that failed, came back incomplete
-   (truncated/refused/empty), or never returned a record
+**Fan-out model.** A job owns *many* independent OpenAI batches, not one.
+`prepare` chunks the job's requests into groups of `--batch-size` and `submit`
+creates one standalone batch per group, each with its own `batch_id`, files and
+lifecycle. The default `--batch-size` is **1 — one request per batch** — for
+maximum fault isolation: a failure or retry storm in one request can never touch
+the others. OpenAI has no notion of "grouped" batches, so the association lives
+only in the job state file (`state["batches"]`, a list of member batches). Every
+later stage operates across the whole fleet.
+
+1. `prepare` — upload images to the Files API, chunk into member batches
+   (`--batch-size N`, default 1), build one JSONL per member, save job state
+2. `submit` — create one OpenAI batch per member (fans out); resume-safe, and
+   paces creation to stay under OpenAI's ~2,000-batches/hour cap
+3. `status` — aggregate progress across the fleet (safe to run repeatedly)
+4. `fetch` — download results from every finished member into
+   `outputs/<config>/`; optionally chain into Step 2 normalization with
+   `--run-phase2` (imports `process_file` from `Phase 2 - Normalize Code.py`)
+5. `retry` — resubmit each member's failed / incomplete (truncated/refused/
+   empty) / missing requests as fresh batches, capped at 3 attempts per request
+   (`MAX_SCAN_ATTEMPTS`); requests past the cap are reported for the synchronous
+   `transcribe.py` fallback instead of looping
+
+The `watch` command is a **fleet cost watchdog**: it aggregates request counts
+and billed cost across *all* of a job's batches and, on a runaway-cost /
+retry-storm / systemic-failure signature, cancels every still-running batch.
+The failure-ratio guardrail is meaningful only on the aggregate (it is
+degenerate on any single one-request batch), which is why the watchdog watches
+the fleet as one unit.
 
 ```bash
-python3 batch_transcribe.py prepare --effort medium --job my-run
+python3 batch_transcribe.py prepare --effort medium --job my-run   # 1 req/batch
+python3 batch_transcribe.py prepare --effort medium --batch-size 25 --job my-run  # or chunks of 25
 python3 batch_transcribe.py submit  --job my-run
 python3 batch_transcribe.py status  --job my-run
 python3 batch_transcribe.py fetch   --job my-run --run-phase2
 python3 batch_transcribe.py retry   --job my-run   # if anything failed
+python3 batch_transcribe.py watch   --job my-run   # optional live fleet watchdog
 ```
 
 ### `Phase 2 - Normalize Code.py` — Step 2, interim → Unicode

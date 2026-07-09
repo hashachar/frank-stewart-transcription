@@ -2,25 +2,41 @@
 """
 batch_transcribe.py — Async batch transcription via OpenAI Batch API.
 
+Fan-out model
+-------------
+A job owns MANY independent OpenAI batches, not one. `prepare` chunks the job's
+requests into groups of --batch-size and `submit` creates one standalone batch
+per group (each with its own batch_id / files / lifecycle). The default
+--batch-size is 1: one request per batch, for maximum fault isolation — a storm
+or failure in one request can never touch the others. "sub-batch"/"member" is
+just our label; OpenAI has no grouping primitive, so the association lives only
+in the job state file. status / fetch / retry / watch all operate across the
+whole fleet; the watchdog aggregates counts + cost over all members and, on a
+trip, cancels every still-running batch.
+
 Workflow (run each stage in order):
 
-  1. prepare  — upload images to Files API, build JSONL, save job state
-  2. submit   — send JSONL to Batch API, record batch_id
-  3. status   — check progress (run any time after submit)
-  4. fetch    — download results → output folders; optionally run Phase 2
-  5. retry    — resubmit only the failed requests from a completed batch
+  1. prepare  — upload images to Files API, chunk into member batches, save state
+  2. submit   — create one OpenAI batch per member (fans out), record batch_ids
+  3. status   — aggregate progress across the fleet (run any time after submit)
+  4. fetch    — download results from every finished member → outputs; opt. Phase 2
+  5. retry    — resubmit each member's failed requests as fresh batches
+                (capped at MAX_SCAN_ATTEMPTS tries/request → then sync fallback)
 
 State between stages is persisted in batch_jobs/<job-name>.json.
 
 Usage examples
 --------------
-# Full directory, medium effort, CI on (recommended config):
-python batch_transcribe.py prepare --effort medium
+# Full directory, medium effort, CI on, one request per batch (recommended):
+python batch_transcribe.py prepare --effort medium            # --batch-size 1 default
 python batch_transcribe.py submit  --job my-run
 python batch_transcribe.py status  --job my-run
 python batch_transcribe.py fetch   --job my-run --run-phase2
 
-# If some requests failed, resubmit only those:
+# Chunk into batches of 25 requests instead of one-per-batch:
+python batch_transcribe.py prepare --effort medium --batch-size 25 --job my-run
+
+# If some requests failed, resubmit only those (each as its own fresh batch):
 python batch_transcribe.py retry   --job my-run
 python batch_transcribe.py status  --job my-run
 python batch_transcribe.py fetch   --job my-run --run-phase2
@@ -63,6 +79,28 @@ ADMIN_KEY = os.getenv("OPENAI_ADMIN_API_KEY")
 # Batch API hard limits (used for pre-flight checks in submit — #10)
 BATCH_MAX_REQUESTS   = 50_000
 BATCH_MAX_INPUT_MB   = 200
+
+# --- Fan-out (job owns many independent batches) -----------------------------
+# A job no longer maps to a single Batch. `prepare` chunks its requests into
+# groups of DEFAULT_BATCH_SIZE and `submit` creates one independent OpenAI batch
+# per group (each with its own batch_id / files / lifecycle). "sub-batch" is just
+# our label — OpenAI has no such concept; the grouping lives only in job state.
+#
+# batch_size 1 = one request per batch (maximum fault isolation: a storm in one
+# request can never touch the other requests). Larger values trade isolation for
+# fewer batches to track.
+DEFAULT_BATCH_SIZE = 1
+
+# OpenAI caps batch CREATION at ~2,000 batches/hour. Above this many pending
+# members, submit paces its create calls to stay under the ceiling.
+BATCH_CREATE_HOURLY_LIMIT = 2_000
+BATCH_CREATE_PACE_THRESHOLD = 1_800     # start pacing once pending members exceed this
+BATCH_CREATE_PACE_SECONDS   = 1.9       # ~1 create / 1.9s ≈ 1,894/hr, safely under the cap
+
+# Per-scan retry cap: once a single request has been attempted this many times
+# across its own member-batch history, `retry` stops re-batching it and reports
+# it for the synchronous fallback (transcribe.py) instead of looping forever.
+MAX_SCAN_ATTEMPTS = 3
 
 BASE        = Path(__file__).resolve().parent.parent
 PROMPT_DIR  = BASE / "prompt"
@@ -157,12 +195,97 @@ def _load_state(job_name: str) -> dict:
     p = _state_path(job_name)
     if not p.exists():
         sys.exit(f"No job state found for '{job_name}'. Run prepare first.")
-    return json.loads(p.read_text(encoding="utf-8"))
+    return _migrate_state(json.loads(p.read_text(encoding="utf-8")))
 
 
 def _save_state(state: dict):
     p = _state_path(state["job_name"])
     p.write_text(json.dumps(state, indent=2, ensure_ascii=False), encoding="utf-8")
+
+
+# ---------------------------------------------------------------------------
+# Fan-out state model: a job owns state["batches"], a list of "member" dicts,
+# one per independent OpenAI batch. Legacy single-batch state files are migrated
+# in memory on load so old jobs and the ledger keep working unchanged.
+# ---------------------------------------------------------------------------
+
+def _new_member(index, custom_ids, jsonl_path):
+    """A fresh member-batch record (one independent OpenAI batch)."""
+    return {
+        "index":            index,
+        "custom_ids":       list(custom_ids),
+        "jsonl_path":       str(jsonl_path) if jsonl_path else None,
+        "jsonl_file_id":    None,
+        "batch_id":         None,
+        "status":           "prepared",
+        "output_file_id":   None,
+        "error_file_id":    None,
+        "completed_at":     None,
+        "needs_retry":      None,
+        "previous_batches": [],
+    }
+
+
+def _migrate_state(state: dict) -> dict:
+    """Ensure state has a `batches` member list. A legacy single-batch job is
+    folded into a one-member list (in memory; persisted on the next save)."""
+    if "batches" in state:
+        return state
+    member = {
+        "index":            0,
+        "custom_ids":       [i["custom_id"] for i in state.get("images", {}).values()],
+        "jsonl_path":       state.get("jsonl_path"),
+        "jsonl_file_id":    state.get("jsonl_file_id"),
+        "batch_id":         state.get("batch_id"),
+        "status":           state.get("status", "preparing"),
+        "output_file_id":   state.get("output_file_id"),
+        "error_file_id":    state.get("error_file_id"),
+        "completed_at":     state.get("completed_at"),
+        "needs_retry":      state.get("needs_retry"),
+        "previous_batches": state.get("previous_batches", []) or [],
+    }
+    # Only a real member if the legacy job ever built a JSONL or created a batch.
+    state["batches"] = [member] if (member["batch_id"] or member["jsonl_path"]) else []
+    return state
+
+
+def _member_batch_ids(state):
+    """Current batch_id of every member that has been submitted."""
+    return [m["batch_id"] for m in state.get("batches", []) if m.get("batch_id")]
+
+
+def _custom_to_stem(state):
+    return {info["custom_id"]: stem for stem, info in state["images"].items()}
+
+
+def _scan_attempts(state):
+    """custom_id -> number of batch attempts so far (current + previous)."""
+    counts = {}
+    for m in state.get("batches", []):
+        n = 1 + len(m.get("previous_batches", []) or [])
+        for cid in m.get("custom_ids", []):
+            counts[cid] = max(counts.get(cid, 0), n)
+    return counts
+
+
+def _aggregate_status(state):
+    """Coarse whole-job status rolled up from member statuses (for UX/ledger)."""
+    members = state.get("batches", [])
+    if not members:
+        return state.get("status", "preparing")
+    st = [m.get("status") for m in members]
+    if all(s == "fetched" for s in st):
+        return "fetched"
+    if all(s in ("prepared", None) for s in st):
+        return "prepared"
+    if any(s == "submitted" for s in st):
+        return "submitted"
+    return "mixed"
+
+
+def _sync_job_status(state):
+    """Recompute and store the aggregate job status from members."""
+    state["status"] = _aggregate_status(state)
 
 
 def _cost_line(input_tok, output_tok, reasoning_tok, model, batch=True):
@@ -339,9 +462,11 @@ def _admin_usage_since(created_at, end_at=None):
     ``end_at`` is used by the ledger to attribute a window to one batch.
 
     Returns None if the admin key is absent or the call fails — the caller then
-    degrades to the lag-free failure-ratio guardrail. Attribution assumes at most
-    one batch runs per window (true for this one-batch-at-a-time workflow); the
-    usage endpoint cannot group by a single batch_id.
+    degrades to the lag-free failure-ratio guardrail. The usage endpoint cannot
+    group by a single batch_id, so this sums ALL batch=True usage in the window.
+    Under the fan-out model that is exactly the fleet cost of the running job —
+    valid as long as only one job's batches are in flight at a time (the watchdog
+    watches the whole fleet as one unit, so this is the number it wants).
     """
     if not ADMIN_KEY:
         return None
@@ -464,6 +589,10 @@ def _watchdog_selftest():
         # Healthy runs never trip:
         ("HEALTHY done",           {"total":20,"completed":20,"failed":0, "execs":21,  "live_cost":8.0,  "elapsed_min":90},  False),
         ("HEALTHY early slow",     {"total":50,"completed":0, "failed":0, "execs":2,   "live_cost":1.0,  "elapsed_min":5},   False),
+        # FLEET scale (one-request-per-batch fan-out): failure-ratio is meaningful
+        # again on the AGGREGATE, where it is degenerate on any single N=1 batch.
+        ("fleet 420/1200 failed",  {"total":1200,"completed":700, "failed":420,"execs":None,"live_cost":None,"elapsed_min":60},  True),
+        ("fleet healthy 1200",     {"total":1200,"completed":1180,"failed":5,  "execs":1210,"live_cost":300.0,"elapsed_min":120},False),
     ]
     ok = True
     print("Watchdog guardrail self-test (defaults):\n")
@@ -497,21 +626,19 @@ def cmd_prepare(args):
             "job_name":       job_name,
             "created_at":     datetime.datetime.now(datetime.timezone.utc).isoformat(),
             "config": {
-                "model":      args.model,
-                "effort":     args.effort,
-                "use_ci":     use_ci,
-                "output_dir": str(_output_dir(args.model, args.effort, use_ci).relative_to(BASE)),
+                "model":       args.model,
+                "effort":      args.effort,
+                "use_ci":      use_ci,
+                "batch_size":  args.batch_size,
+                "output_dir":  str(_output_dir(args.model, args.effort, use_ci).relative_to(BASE)),
                 "prompt_file": None,   # filled in below, once the prompt is resolved
             },
             "images":         {},
-            "jsonl_path":     None,
-            "jsonl_file_id":  None,
-            "batch_id":       None,
+            "batches":        [],      # populated below; one member per OpenAI batch
             "status":         "preparing",
-            "completed_at":   None,
-            "output_file_id": None,
-            "error_file_id":  None,
         }
+    # Record the requested chunk size (a re-prepare may change it).
+    state["config"]["batch_size"] = args.batch_size
 
     # Collect image files
     if args.image:
@@ -580,41 +707,76 @@ def cmd_prepare(args):
         }
         _save_state(state)   # save after each upload — safe to interrupt and retry
 
-    # Build JSONL
+    # --- Chunk requests into member batches and build one JSONL per member ----
+    # Each member becomes an independent OpenAI batch in `submit`. batch_size 1
+    # means one request per batch (maximum fault isolation).
     JOBS_DIR.mkdir(parents=True, exist_ok=True)
-    jsonl_path = JOBS_DIR / f"{job_name}.jsonl"
+    batch_size = max(1, int(args.batch_size))
+    stems = list(state["images"].keys())
+    chunks = [stems[i:i + batch_size] for i in range(0, len(stems), batch_size)]
+
+    # Preserve already-submitted members across a re-prepare: if a prior member
+    # covered exactly this set of custom_ids and has a batch_id, carry it over so
+    # we never re-create or orphan an in-flight batch (mirrors the file-reuse #6).
+    prior_by_cids = {}
+    for m in state.get("batches", []):
+        if m.get("batch_id"):
+            prior_by_cids[frozenset(m.get("custom_ids", []))] = m
+
     tools = [{"type": "code_interpreter", "container": {"type": "auto"}}] if use_ci else []
 
-    with jsonl_path.open("w", encoding="utf-8") as fh:
-        for stem, info in state["images"].items():
-            line = {
-                "custom_id": info["custom_id"],
-                "method":    "POST",
-                "url":       "/v1/responses",
-                "body": {
-                    "model":     args.model,
-                    "reasoning": {"effort": args.effort},
-                    "tools":     tools,
-                    "input": [{
-                        "role": "user",
-                        "content": [
-                            {"type": "input_text",  "text": prompt_text},
-                            {"type": "input_image", "file_id": info["file_id"], "detail": "high"},
-                        ],
-                    }],
-                },
-            }
-            fh.write(json.dumps(line, ensure_ascii=False) + "\n")
+    def _write_member_jsonl(path, chunk_stems):
+        with path.open("w", encoding="utf-8") as fh:
+            for stem in chunk_stems:
+                info = state["images"][stem]
+                line = {
+                    "custom_id": info["custom_id"],
+                    "method":    "POST",
+                    "url":       "/v1/responses",
+                    "body": {
+                        "model":     args.model,
+                        "reasoning": {"effort": args.effort},
+                        "tools":     tools,
+                        "input": [{
+                            "role": "user",
+                            "content": [
+                                {"type": "input_text",  "text": prompt_text},
+                                {"type": "input_image", "file_id": info["file_id"], "detail": "high"},
+                            ],
+                        }],
+                    },
+                }
+                fh.write(json.dumps(line, ensure_ascii=False) + "\n")
 
-    jsonl_size_mb = jsonl_path.stat().st_size / 1_048_576
-    state["jsonl_path"] = str(jsonl_path)
-    # JSONL content just changed — drop any previously uploaded copy so submit
-    # re-uploads the fresh file rather than reusing a stale file_id (#6).
-    state["jsonl_file_id"] = None
-    state["status"]     = "prepared"
+    members = []
+    total_bytes = 0
+    for idx, chunk in enumerate(chunks):
+        cids = [state["images"][s]["custom_id"] for s in chunk]
+        carried = prior_by_cids.get(frozenset(cids))
+        jsonl_path = JOBS_DIR / f"{job_name}_b{idx:04d}.jsonl"
+        _write_member_jsonl(jsonl_path, chunk)
+        total_bytes += jsonl_path.stat().st_size
+        if carried:
+            # Keep the live batch; just refresh its local JSONL path.
+            carried["index"]      = idx
+            carried["jsonl_path"] = str(jsonl_path)
+            members.append(carried)
+        else:
+            m = _new_member(idx, cids, jsonl_path)
+            # JSONL content is fresh → force a re-upload in submit (#6).
+            m["jsonl_file_id"] = None
+            members.append(m)
+
+    state["batches"] = members
+    _sync_job_status(state)
     _save_state(state)
 
-    print(f"\nJSONL built : {jsonl_path.name}  ({jsonl_size_mb:.2f} MB,  {len(state['images'])} requests)")
+    jsonl_size_mb = total_bytes / 1_048_576
+    n_live = sum(1 for m in members if m.get("batch_id"))
+    print(f"\nPlanned     : {len(members)} batch(es) of up to {batch_size} request(s)  "
+          f"({len(stems)} requests, {jsonl_size_mb:.2f} MB total JSONL)")
+    if n_live:
+        print(f"              {n_live} already-submitted member(s) preserved as-is.")
     print(f"\nNext step → python batch_transcribe.py submit --job {job_name}")
 
 
@@ -624,61 +786,89 @@ def cmd_prepare(args):
 
 def cmd_submit(args):
     state = _load_state(args.job)
+    members = state.get("batches", [])
+    if not members:
+        sys.exit(f"Job '{args.job}' has no prepared batches. Run prepare first.")
 
-    if state["status"] == "submitted":
-        print(f"Job '{args.job}' already submitted. Batch ID: {state['batch_id']}")
+    # Members still needing a batch created (resume-safe: an interrupted submit
+    # only creates the ones that never landed).
+    pending = [m for m in members if not m.get("batch_id")]
+    already = len(members) - len(pending)
+    if not pending:
+        print(f"All {len(members)} member batch(es) of job '{args.job}' already submitted.")
         print(f"Check status → python batch_transcribe.py status --job {args.job}")
         return
 
-    jsonl_path = Path(state["jsonl_path"])
-    if not jsonl_path.exists():
-        sys.exit(f"JSONL file not found: {jsonl_path}\nRe-run prepare.")
+    # Pre-flight each pending member against the Batch API's hard per-batch limits
+    # so we fail here with a clear message instead of a rejected batch (#10).
+    for m in pending:
+        jp = Path(m["jsonl_path"])
+        if not jp.exists():
+            sys.exit(f"JSONL file not found: {jp}\nRe-run prepare.")
+        size_mb = jp.stat().st_size / 1_048_576
+        if size_mb > BATCH_MAX_INPUT_MB:
+            sys.exit(f"{jp.name} is {size_mb:.1f} MB, over the {BATCH_MAX_INPUT_MB} MB per-batch "
+                     f"limit. Lower --batch-size.")
+        if len(m["custom_ids"]) > BATCH_MAX_REQUESTS:
+            sys.exit(f"{jp.name} has {len(m['custom_ids'])} requests, over the "
+                     f"{BATCH_MAX_REQUESTS:,} per-batch limit. Lower --batch-size.")
 
-    # Pre-flight against the Batch API's hard limits so we fail here with a clear
-    # message instead of getting a rejected batch (#10).
-    jsonl_size_mb = jsonl_path.stat().st_size / 1_048_576
-    n_requests    = len(state["images"])
-    if jsonl_size_mb > BATCH_MAX_INPUT_MB:
-        sys.exit(f"JSONL is {jsonl_size_mb:.1f} MB, over the {BATCH_MAX_INPUT_MB} MB batch input limit. "
-                 f"Split into smaller jobs (--limit).")
-    if n_requests > BATCH_MAX_REQUESTS:
-        sys.exit(f"{n_requests} requests exceeds the {BATCH_MAX_REQUESTS:,} per-batch limit. "
-                 f"Split into smaller jobs (--limit).")
+    n_requests = sum(len(m["custom_ids"]) for m in pending)
 
-    # Refuse to submit on a balance that can't absorb the worst case (runs before
-    # the upload so an abort never orphans a file).
+    # One aggregate balance guard for the whole fan-out (not one prompt per batch).
+    # Runs before any upload so an abort never orphans a file.
     _preflight_balance_check(n_requests, state["config"]["model"], args)
 
-    # Reuse an already-uploaded JSONL if a previous submit uploaded it but the
-    # batch.create call didn't land — avoids orphaning a file on retry (#6).
-    if state.get("jsonl_file_id"):
-        upload_id = state["jsonl_file_id"]
-        print(f"Reusing uploaded JSONL: {upload_id}")
-    else:
-        print(f"Uploading JSONL ({jsonl_size_mb:.2f} MB)...", end=" ", flush=True)
-        with jsonl_path.open("rb") as fh:
-            upload = client.files.create(file=fh, purpose="batch")
-        print(upload.id)
-        upload_id = upload.id
-        state["jsonl_file_id"] = upload_id
-        _save_state(state)
+    # Respect the ~2,000 batches/hour creation cap: pace once the fan-out is large.
+    pause = args.pause if args.pause is not None else (
+        BATCH_CREATE_PACE_SECONDS if len(pending) > BATCH_CREATE_PACE_THRESHOLD else 0.0)
+    if len(pending) > BATCH_CREATE_HOURLY_LIMIT and pause == 0.0:
+        print(f"⚠  {len(pending)} batches to create exceeds the ~{BATCH_CREATE_HOURLY_LIMIT}/hour "
+              f"cap. Pacing at {BATCH_CREATE_PACE_SECONDS}s between creates.")
+        pause = BATCH_CREATE_PACE_SECONDS
 
-    print("Creating batch...", end=" ", flush=True)
-    batch = client.batches.create(
-        input_file_id=upload_id,
-        endpoint="/v1/responses",
-        completion_window="24h",
-    )
-    state["batch_id"] = batch.id
-    state["status"]   = "submitted"
+    print(f"\nSubmitting {len(pending)} batch(es)"
+          f"{f' ({already} already submitted)' if already else ''}"
+          f"{f', pacing {pause}s between creates' if pause else ''} ...\n")
+
+    created = 0
+    for i, m in enumerate(pending):
+        jp = Path(m["jsonl_path"])
+        size_mb = jp.stat().st_size / 1_048_576
+        # Reuse an already-uploaded JSONL if a prior attempt uploaded it but the
+        # create didn't land — avoids orphaning a file on retry (#6).
+        if m.get("jsonl_file_id"):
+            upload_id = m["jsonl_file_id"]
+        else:
+            with jp.open("rb") as fh:
+                upload = client.files.create(file=fh, purpose="batch")
+            upload_id = upload.id
+            m["jsonl_file_id"] = upload_id
+            _save_state(state)   # persist before create so a crash can resume
+
+        batch = client.batches.create(
+            input_file_id=upload_id,
+            endpoint="/v1/responses",
+            completion_window="24h",
+        )
+        m["batch_id"] = batch.id
+        m["status"]   = "submitted"
+        _save_state(state)       # persist after each create (resume-safe)
+        created += 1
+        print(f"  [{i+1}/{len(pending)}] b{m['index']:04d} "
+              f"({len(m['custom_ids'])} req, {size_mb:.2f} MB) → {batch.id}")
+
+        if pause and i < len(pending) - 1:
+            time.sleep(pause)
+
+    _sync_job_status(state)
     _save_state(state)
 
-    print(batch.id)
-    print(f"\nBatch submitted. Completion window: 24h (usually faster).")
+    print(f"\n{created} batch(es) submitted. Completion window: 24h (usually faster).")
     print(f"Check status → python batch_transcribe.py status --job {args.job}")
 
     if getattr(args, "watch", False):
-        print(f"\nLaunching cost watchdog (default guardrails)...\n")
+        print(f"\nLaunching fleet cost watchdog (default guardrails)...\n")
         watch_args = build_parser().parse_args(["watch", "--job", args.job])
         cmd_watch(watch_args)
 
@@ -687,230 +877,304 @@ def cmd_submit(args):
 # Stage 3: status
 # ---------------------------------------------------------------------------
 
+def _fetch_batch_index(batch_ids):
+    """Map batch_id -> Batch object. For a small fan-out, retrieve each; for a
+    large one, page batches.list once and filter (fewer calls than N retrieves)."""
+    ids = [b for b in batch_ids if b]
+    if not ids:
+        return {}
+    if len(ids) <= 25:
+        idx = {}
+        for bid in ids:
+            try:
+                idx[bid] = client.batches.retrieve(bid)
+            except Exception as exc:
+                print(f"  [status] could not retrieve {bid}: {exc}")
+        return idx
+    want = set(ids)
+    return {b.id: b for b in _list_all_batches() if b.id in want}
+
+
+# Terminal batch statuses that still expose partial output for finished requests
+# (fix #1; 'cancelled' added after the 2026-07-04 storm, where cancelling mid-run
+# left completed pages to harvest).
+_FETCHABLE = ("completed", "expired", "cancelled")
+
+
+def _refresh_members(state):
+    """Retrieve every submitted member's batch, roll its live status/output/error
+    file ids into state, and return (batch_index, aggregate_counts)."""
+    idx = _fetch_batch_index(_member_batch_ids(state))
+    agg = {"total": 0, "completed": 0, "failed": 0}
+    for m in state.get("batches", []):
+        b = idx.get(m.get("batch_id"))
+        if not b:
+            continue
+        rc = b.request_counts
+        if rc:
+            agg["total"]     += rc.total or 0
+            agg["completed"] += rc.completed or 0
+            agg["failed"]    += rc.failed or 0
+        if b.status in _FETCHABLE:
+            m["output_file_id"] = b.output_file_id
+            m["error_file_id"]  = b.error_file_id
+            if m.get("status") != "fetched":
+                m["status"] = b.status
+            m["completed_at"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        elif b.status == "failed":
+            # A batch-level failure (whole batch rejected) may or may not carry an
+            # error file. Capture whatever exists; harvest then marks every request
+            # in the member for retry via reconciliation (nothing completed).
+            m["output_file_id"] = b.output_file_id
+            m["error_file_id"]  = b.error_file_id
+            if m.get("status") != "fetched":
+                m["status"] = "failed"
+        # running states left as 'submitted'
+    return idx, agg
+
+
 def cmd_status(args):
     state = _load_state(args.job)
+    if not _member_batch_ids(state):
+        sys.exit("No submitted batches found. Run submit first.")
 
-    if not state.get("batch_id"):
-        sys.exit(f"No batch_id found. Run submit first.")
+    idx, agg = _refresh_members(state)
+    members = state.get("batches", [])
 
-    batch = client.batches.retrieve(state["batch_id"])
+    # Per-member status tally.
+    tally = {}
+    for m in members:
+        b = idx.get(m.get("batch_id"))
+        s = b.status if b else (m.get("status") or "unknown")
+        tally[s] = tally.get(s, 0) + 1
 
-    counts = batch.request_counts
-    total     = counts.total     if counts else "?"
-    completed = counts.completed if counts else "?"
-    failed    = counts.failed    if counts else "?"
+    n_members  = len(members)
+    n_terminal = sum(1 for m in members
+                     if (idx.get(m.get("batch_id")) or _StubStatus(m)).status
+                     in _FETCHABLE + ("failed",))
 
     print(f"Job         : {state['job_name']}")
-    print(f"Batch ID    : {batch.id}")
-    print(f"Status      : {batch.status}")
-    print(f"Progress    : {completed}/{total} completed,  {failed} failed")
-    if batch.expires_at:
-        exp = datetime.datetime.fromtimestamp(batch.expires_at).strftime("%Y-%m-%d %H:%M")
-        print(f"Expires     : {exp}")
+    print(f"Batches     : {n_members}  ({', '.join(f'{v} {k}' for k, v in sorted(tally.items()))})")
+    print(f"Requests    : {agg['completed']}/{agg['total']} completed,  {agg['failed']} failed")
 
-    # Expired AND cancelled batches still expose partial output for the requests
-    # that finished — treat them as fetchable (fix #1; cancelled added after the
-    # 2026-07-04 storm, where cancelling mid-run left 2 completed pages to harvest).
-    if batch.status in ("completed", "expired", "cancelled"):
-        state["status"]         = batch.status
-        state["completed_at"]   = datetime.datetime.now(datetime.timezone.utc).isoformat()
-        state["output_file_id"] = batch.output_file_id
-        state["error_file_id"]  = batch.error_file_id
-        _save_state(state)
-        if batch.status in ("expired", "cancelled"):
-            print(f"\nBatch {batch.status} before finishing. Partial results are available.")
-        print(f"\nFetch results → python batch_transcribe.py fetch --job {args.job}")
-    elif batch.status == "failed":
-        state["status"] = batch.status
-        _save_state(state)
-        print(f"\nBatch ended with status: {batch.status}")
-        _print_batch_errors(batch)                  # surface validation errors (fix #3)
+    # Surface any batch-level validation errors on failed members.
+    for m in members:
+        b = idx.get(m.get("batch_id"))
+        if b and b.status == "failed":
+            print(f"\nMember b{m['index']:04d} ({b.id}) failed:")
+            _print_batch_errors(b)
+
+    _sync_job_status(state)
+    _save_state(state)
+
+    n_fetchable = sum(1 for m in members
+                      if (idx.get(m.get("batch_id")) or _StubStatus(m)).status in _FETCHABLE)
+    if n_terminal == n_members:
+        print(f"\nAll batches finished. Fetch results → "
+              f"python batch_transcribe.py fetch --job {args.job}")
+    elif n_fetchable:
+        print(f"\n{n_fetchable} batch(es) done, {n_members - n_terminal} still running. "
+              f"You can fetch the finished ones now, or wait for the rest.")
     else:
-        print(f"\nStill running. Check again later.")
+        print(f"\n{n_members - n_terminal} batch(es) still running. Check again later.")
+
+
+class _StubStatus:
+    """Fallback status carrier when a member's live batch couldn't be retrieved."""
+    def __init__(self, member):
+        self.status = member.get("status") or "unknown"
 
 
 # ---------------------------------------------------------------------------
 # Stage 4: fetch
 # ---------------------------------------------------------------------------
 
+def _process_output_record(record, custom_to_stem, ctx):
+    """Process ONE output-file record. Writes the .txt + raw log for a usable
+    response, or a raw log only for an unusable one (incomplete/refusal/empty).
+    Returns (outcome, cost) where outcome ∈ {'success','incomplete'}."""
+    custom_id = record.get("custom_id")
+    stem      = custom_to_stem.get(custom_id, custom_id)
+    effort, ci_label, ts_fetch = ctx["effort"], ctx["ci_label"], ctx["ts_fetch"]
+
+    if record.get("error"):
+        print(f"  [ERROR]  {stem}: {_error_message(record)}")
+        return "incomplete", 0.0
+
+    body = (record.get("response", {}) or {}).get("body", {}) or {}
+
+    # Extract output text, and note any refusal parts (#5)
+    output_text = ""
+    refusal     = ""
+    for item in body.get("output", []):
+        if item.get("type") == "message":
+            for part in item.get("content", []):
+                if part.get("type") == "output_text":
+                    output_text += part.get("text", "")
+                elif part.get("type") == "refusal":
+                    refusal += part.get("refusal", "")
+
+    # A response that came back but is unusable — truncated ('incomplete'), a
+    # refusal, or empty text — must not be saved as success; flag it for retry (#5).
+    resp_status        = body.get("status")
+    incomplete_details = body.get("incomplete_details") or {}
+    if resp_status == "incomplete" or refusal or not output_text.strip():
+        if resp_status == "incomplete":
+            reason = f"incomplete ({incomplete_details.get('reason', 'unknown')})"
+        elif refusal:
+            reason = f"refusal — {refusal.strip()[:120]}"
+        else:
+            reason = "empty output text"
+        log_path = LOGS_DIR / f"{stem}_{ts_fetch}_{effort}_CI-{ci_label}_batch_raw.json"
+        log_path.write_text(json.dumps(record, indent=2, ensure_ascii=False, default=str),
+                            encoding="utf-8")
+        print(f"  [INCOMPLETE] {stem}: {reason} — not saved as success")
+        return "incomplete", 0.0
+
+    usage         = body.get("usage", {}) or {}
+    input_tok     = usage.get("input_tokens", 0)
+    output_tok    = usage.get("output_tokens", 0)
+    out_details   = usage.get("output_tokens_details", {}) or {}
+    reasoning_tok = out_details.get("reasoning_tokens", 0)
+    in_details    = usage.get("input_tokens_details", {}) or {}
+    cached_tok    = in_details.get("cached_tokens", 0)
+
+    cost, in_cost, out_cost, visible_tok = _cost_line(
+        input_tok, output_tok, reasoning_tok, ctx["model"], batch=True)
+
+    out_path = ctx["output_dir"] / f"{stem}_{ts_fetch}.txt"
+    out_path.write_text(output_text, encoding="utf-8")
+    log_path = LOGS_DIR / f"{stem}_{ts_fetch}_{effort}_CI-{ci_label}_batch_raw.json"
+    log_path.write_text(json.dumps(record, indent=2, ensure_ascii=False, default=str),
+                        encoding="utf-8")
+
+    cached_note = f",  cached {cached_tok:,}" if cached_tok else ""
+    print(f"  {stem}")
+    print(f"    tokens  : {input_tok:,} in  /  {output_tok:,} out  "
+          f"(reasoning {reasoning_tok:,}  visible {visible_tok:,}{cached_note})")
+    print(f"    cost    : ${cost:.4f} batch  (${in_cost:.4f} in + ${out_cost:.4f} out)")
+    print(f"    saved   : {out_path.name}")
+
+    if ctx["phase2_fn"]:
+        try:
+            report    = ctx["phase2_fn"](out_path)
+            n_flags   = report["n_flags"]
+            out_names = [Path(o).name for o in report["outputs"]]
+            flag_note = f"  ⚠ {n_flags} flag(s)" if n_flags else ""
+            print(f"    phase2  : {', '.join(out_names)}{flag_note}")
+        except Exception as exc:
+            print(f"    phase2  : ERROR — {exc}")
+
+    return "success", cost
+
+
 def _harvest_results(state, run_phase2=False, suggest_retry=True):
-    """Download the output (+error) files, write transcriptions/logs, and reconcile
-    against the requests we submitted.
-
-    Safe to call for a 'completed' OR 'expired' batch — an expired batch still exposes
-    an output file for the requests that finished before the deadline (fix #1). Failed
-    and unfinished requests are read from the *error* file and reconciled against the
-    submitted set so nothing goes missing silently (fix #2). Returns a summary dict.
-    """
-    cfg        = state["config"]
-    model      = cfg["model"]
-    effort     = cfg["effort"]
-    use_ci     = cfg["use_ci"]
-    output_dir = BASE / cfg["output_dir"]
-    output_dir.mkdir(parents=True, exist_ok=True)
+    """Harvest EVERY finished member batch: download each one's output (+error)
+    file, write transcriptions/logs, and reconcile per member so nothing goes
+    missing silently (fixes #1/#2/#4/#5). Members with no files yet (still running)
+    are skipped. Each member records its own needs_retry; the aggregate is stored
+    on state too. Returns an aggregate summary dict."""
+    cfg = state["config"]
+    ctx = {
+        "model":      cfg["model"],
+        "effort":     cfg["effort"],
+        "ci_label":   "on" if cfg["use_ci"] else "off",
+        "output_dir": BASE / cfg["output_dir"],
+        "ts_fetch":   datetime.datetime.now().strftime("%Y%m%d_%H%M%S"),
+        "phase2_fn":  _load_phase2() if run_phase2 else None,
+    }
+    ctx["output_dir"].mkdir(parents=True, exist_ok=True)
     LOGS_DIR.mkdir(exist_ok=True)
-    ci_label   = "on" if use_ci else "off"
 
-    # Build reverse lookup: custom_id -> image stem
-    custom_to_stem = {info["custom_id"]: stem for stem, info in state["images"].items()}
-    expected       = set(custom_to_stem)
+    custom_to_stem = _custom_to_stem(state)
 
-    phase2_fn   = _load_phase2() if run_phase2 else None
-    ts_fetch    = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    total_cost  = 0.0
-    success     = 0
-    seen        = set()
-    bad_lines   = 0
-    incomplete_custom_ids = set()   # completed-but-unusable responses (#5)
+    total_cost = 0.0
+    success    = 0
+    bad_lines  = 0
+    all_failed, all_incomplete, all_missing = set(), set(), set()
 
-    # --- successful responses live in the output file ---
-    if state.get("output_file_id"):
-        print(f"Downloading output file {state['output_file_id']}...", end=" ", flush=True)
-        records, bad_lines = _download_jsonl(state["output_file_id"])
-        print(f"{len(records)} result lines\n")
+    # Harvest members that have result files, PLUS batch-level failures (no files
+    # but every request needs retry — caught by reconciliation below).
+    members = [m for m in state.get("batches", [])
+               if m.get("output_file_id") or m.get("error_file_id")
+               or m.get("status") == "failed"]
 
-        for record in records:
-            # One malformed/unexpected record must not abort the whole harvest (fix #4)
-            try:
-                custom_id = record.get("custom_id")
-                seen.add(custom_id)
-                stem = custom_to_stem.get(custom_id, custom_id)
+    for m in members:
+        expected          = set(m.get("custom_ids", []))
+        seen              = set()
+        member_incomplete = set()
 
-                if record.get("error"):
-                    print(f"  [ERROR]  {stem}: {_error_message(record)}")
-                    incomplete_custom_ids.add(custom_id)
-                    continue
-
-                response_obj = record.get("response", {}) or {}
-                body         = response_obj.get("body", {}) or {}
-
-                # Extract output text, and note any refusal parts (#5)
-                output_text = ""
-                refusal     = ""
-                for item in body.get("output", []):
-                    if item.get("type") == "message":
-                        for part in item.get("content", []):
-                            if part.get("type") == "output_text":
-                                output_text += part.get("text", "")
-                            elif part.get("type") == "refusal":
-                                refusal += part.get("refusal", "")
-
-                # A response that came back but is unusable — truncated (status
-                # 'incomplete'), a refusal, or empty text — must not be saved as a
-                # success; flag it so it can be retried (#5).
-                resp_status = body.get("status")
-                incomplete_details = body.get("incomplete_details") or {}
-                if resp_status == "incomplete" or refusal or not output_text.strip():
-                    if resp_status == "incomplete":
-                        reason = f"incomplete ({incomplete_details.get('reason', 'unknown')})"
-                    elif refusal:
-                        reason = f"refusal — {refusal.strip()[:120]}"
+        # --- successful responses live in the output file ---
+        if m.get("output_file_id"):
+            print(f"\n── b{m['index']:04d} output {m['output_file_id']} ──")
+            records, mbad = _download_jsonl(m["output_file_id"])
+            bad_lines += mbad
+            for record in records:
+                # One malformed record must not abort the whole harvest (fix #4).
+                try:
+                    seen.add(record.get("custom_id"))
+                    outcome, cost = _process_output_record(record, custom_to_stem, ctx)
+                    if outcome == "success":
+                        success    += 1
+                        total_cost += cost
                     else:
-                        reason = "empty output text"
-                    # Keep the raw record for inspection, but don't write a .txt.
-                    log_path = LOGS_DIR / f"{stem}_{ts_fetch}_{effort}_CI-{ci_label}_batch_raw.json"
-                    log_path.write_text(json.dumps(record, indent=2, ensure_ascii=False, default=str),
-                                        encoding="utf-8")
-                    print(f"  [INCOMPLETE] {stem}: {reason} — not saved as success")
-                    incomplete_custom_ids.add(custom_id)
-                    continue
+                        member_incomplete.add(record.get("custom_id"))
+                except Exception as exc:
+                    bad_lines += 1
+                    print(f"  [SKIP] could not process a result line: {exc}")
 
-                # Usage
-                usage         = body.get("usage", {}) or {}
-                input_tok     = usage.get("input_tokens", 0)
-                output_tok    = usage.get("output_tokens", 0)
-                out_details   = usage.get("output_tokens_details", {}) or {}
-                reasoning_tok = out_details.get("reasoning_tokens", 0)
-                in_details    = usage.get("input_tokens_details", {}) or {}
-                cached_tok    = in_details.get("cached_tokens", 0)
+        # --- failed / unfinished requests live in the error file (fix #2) ---
+        member_failed = set()
+        if m.get("error_file_id"):
+            err_records, err_bad = _download_jsonl(m["error_file_id"])
+            bad_lines += err_bad
+            member_failed = _failed_custom_ids(err_records)
+            seen |= {r.get("custom_id") for r in err_records if r.get("custom_id")}
+            for rec in err_records:
+                stem = custom_to_stem.get(rec.get("custom_id"), rec.get("custom_id"))
+                print(f"  [FAILED] b{m['index']:04d} {stem}: {_error_message(rec)}")
 
-                cost, in_cost, out_cost, visible_tok = _cost_line(
-                    input_tok, output_tok, reasoning_tok, model, batch=True
-                )
-                total_cost += cost
+        # Reconcile this member: submitted requests with no record at all.
+        member_missing = expected - seen
+        member_needs   = member_failed | member_incomplete | member_missing
+        m["needs_retry"] = sorted(member_needs)
+        m["status"]      = "fetched"
 
-                # Write output text
-                out_path = output_dir / f"{stem}_{ts_fetch}.txt"
-                out_path.write_text(output_text, encoding="utf-8")
+        all_failed     |= member_failed
+        all_incomplete |= member_incomplete
+        all_missing    |= member_missing
 
-                # Write raw log
-                log_path = LOGS_DIR / f"{stem}_{ts_fetch}_{effort}_CI-{ci_label}_batch_raw.json"
-                log_path.write_text(json.dumps(record, indent=2, ensure_ascii=False, default=str),
-                                    encoding="utf-8")
-
-                cached_note = f",  cached {cached_tok:,}" if cached_tok else ""
-                print(f"  {stem}")
-                print(f"    tokens  : {input_tok:,} in  /  {output_tok:,} out  "
-                      f"(reasoning {reasoning_tok:,}  visible {visible_tok:,}{cached_note})")
-                print(f"    cost    : ${cost:.4f} batch  (${in_cost:.4f} in + ${out_cost:.4f} out)")
-                print(f"    saved   : {out_path.name}")
-
-                # Phase 2 normalization
-                if phase2_fn:
-                    try:
-                        report = phase2_fn(out_path)
-                        n_flags = report["n_flags"]
-                        out_names = [Path(o).name for o in report["outputs"]]
-                        flag_note = f"  ⚠ {n_flags} flag(s)" if n_flags else ""
-                        print(f"    phase2  : {', '.join(out_names)}{flag_note}")
-                    except Exception as exc:
-                        print(f"    phase2  : ERROR — {exc}")
-
-                success += 1
-            except Exception as exc:
-                bad_lines += 1
-                print(f"  [SKIP] could not process a result line: {exc}")
-
-    # --- failed / unfinished requests live in the error file (fix #2) ---
-    failed_custom_ids = set()
-    if state.get("error_file_id"):
-        print(f"\nDownloading error file {state['error_file_id']}...", end=" ", flush=True)
-        err_records, err_bad = _download_jsonl(state["error_file_id"])
-        print(f"{len(err_records)} records")
-        bad_lines += err_bad
-        failed_custom_ids = _failed_custom_ids(err_records)
-        seen |= {r.get("custom_id") for r in err_records if r.get("custom_id")}
-        for rec in err_records:
-            stem = custom_to_stem.get(rec.get("custom_id"), rec.get("custom_id"))
-            print(f"  [FAILED] {stem}: {_error_message(rec)}")
-
-    # --- reconcile: requests we submitted but never got any record back for ---
-    missing = expected - seen
-
-    # Everything that needs resubmitting: hard failures, unusable responses, and
-    # anything that never came back. Persisted so retry can act on it regardless of
-    # whether it re-harvests (#5, fix #2).
-    needs_retry = failed_custom_ids | incomplete_custom_ids | missing
+    needs_retry = all_failed | all_incomplete | all_missing
 
     print(f"\n{'─'*60}")
-    print(f"Results     : {success} success,  {len(failed_custom_ids)} failed,  "
-          f"{len(incomplete_custom_ids)} incomplete,  {len(missing)} missing")
+    print(f"Results     : {success} success,  {len(all_failed)} failed,  "
+          f"{len(all_incomplete)} incomplete,  {len(all_missing)} missing  "
+          f"(across {len(members)} finished batch(es))")
     if bad_lines:
         print(f"Skipped     : {bad_lines} unparseable/unprocessable line(s)")
     print(f"Total cost  : ${total_cost:.4f}  (batch rates, 50% off standard)")
-    per_page    = total_cost / success if success else 0
-    est_1200    = per_page * 1200
-    print(f"Per page    : ${per_page:.4f}  →  est. ${est_1200:.0f} for 1,200 pages")
-    print(f"Output dir  : {output_dir}")
+    per_page = total_cost / success if success else 0
+    print(f"Per page    : ${per_page:.4f}  →  est. ${per_page * 1200:.0f} for 1,200 pages")
+    print(f"Output dir  : {ctx['output_dir']}")
 
-    if missing:
-        print(f"\n{len(missing)} request(s) had neither an output nor an error record:")
-        for cid in sorted(missing):
+    if all_missing:
+        print(f"\n{len(all_missing)} request(s) had neither an output nor an error record:")
+        for cid in sorted(all_missing):
             print(f"  {custom_to_stem.get(cid, cid)}")
 
     if suggest_retry and needs_retry:
         print(f"\n→ Resubmit the {len(needs_retry)} unfinished request(s): "
               f"python batch_transcribe.py retry --job {state['job_name']}")
 
-    state["status"]      = "fetched"
-    state["needs_retry"] = sorted(needs_retry)
+    state["needs_retry"] = sorted(needs_retry)   # aggregate, kept for compatibility
+    _sync_job_status(state)
     _save_state(state)
 
     return {
         "success":               success,
-        "failed_custom_ids":     failed_custom_ids,
-        "incomplete_custom_ids": incomplete_custom_ids,
-        "missing_custom_ids":    missing,
+        "failed_custom_ids":     all_failed,
+        "incomplete_custom_ids": all_incomplete,
+        "missing_custom_ids":    all_missing,
         "needs_retry":           needs_retry,
         "total_cost":            total_cost,
     }
@@ -918,33 +1182,33 @@ def _harvest_results(state, run_phase2=False, suggest_retry=True):
 
 def cmd_fetch(args):
     state = _load_state(args.job)
+    if not _member_batch_ids(state):
+        sys.exit("No submitted batches found. Run submit first.")
 
-    # Accept 'completed', 'expired', OR 'cancelled' — all three still expose the
-    # partial output for requests that finished (fix #1; cancelled added 2026-07-04
-    # so a batch cancelled to stop a retry storm still yields its completed pages).
-    if state["status"] not in ("completed", "expired", "cancelled"):
-        print("Checking batch status first...")
-        batch = client.batches.retrieve(state["batch_id"])
-        if batch.status not in ("completed", "expired", "cancelled"):
-            print(f"Batch is '{batch.status}' — not ready to fetch yet.")
-            if batch.status == "failed":
-                _print_batch_errors(batch)          # surface validation errors (fix #3)
-            counts = batch.request_counts
-            if counts:
-                print(f"Progress: {counts.completed}/{counts.total} completed, {counts.failed} failed")
-            return
-        if batch.status in ("expired", "cancelled"):
-            print(f"Batch {batch.status} — harvesting the requests that completed before it stopped.")
-        state["status"]         = batch.status
-        state["output_file_id"] = batch.output_file_id
-        state["error_file_id"]  = batch.error_file_id
-        _save_state(state)
+    # Refresh live status and roll each finished member's output/error file ids
+    # into state. Fetchable = completed / expired / cancelled (all expose partial
+    # output for requests that finished — fix #1).
+    print("Checking batch statuses first...")
+    idx, _ = _refresh_members(state)
+    _save_state(state)
 
-    if not state.get("output_file_id") and not state.get("error_file_id"):
-        sys.exit("No output_file_id or error_file_id in state. Something went wrong with the batch.")
+    fetchable = [m for m in state["batches"]
+                 if m.get("output_file_id") or m.get("error_file_id")
+                 or m.get("status") == "failed"]
+    if not fetchable:
+        running = sum(1 for m in state["batches"]
+                      if (idx.get(m.get("batch_id")) or _StubStatus(m)).status
+                      not in _FETCHABLE + ("failed",))
+        print(f"No finished batches to fetch yet ({running} still running). Check status later.")
+        for m in state["batches"]:                 # surface validation errors (fix #3)
+            b = idx.get(m.get("batch_id"))
+            if b and b.status == "failed":
+                print(f"\nMember b{m['index']:04d} ({b.id}) failed:")
+                _print_batch_errors(b)
+        return
 
     _harvest_results(state, run_phase2=args.run_phase2)
-    _safe_update_ledger(state.get("batch_id"))
+    _safe_update_ledger(_member_batch_ids(state))
 
 
 # ---------------------------------------------------------------------------
@@ -953,155 +1217,195 @@ def cmd_fetch(args):
 
 def cmd_retry(args):
     state = _load_state(args.job)
+    if not _member_batch_ids(state):
+        sys.exit("No submitted batches found. Run submit first.")
 
-    if not state.get("batch_id"):
-        sys.exit("No batch_id in state. Run submit first.")
+    custom_to_stem = _custom_to_stem(state)
+    cfg = state["config"]
 
-    # Ensure we have current batch status
-    batch = client.batches.retrieve(state["batch_id"])
-    if batch.status not in ("completed", "failed", "expired", "cancelled"):
-        print(f"Batch is still '{batch.status}' — wait for it to finish before retrying.")
-        return
-
-    if batch.status == "failed":
-        _print_batch_errors(batch)                  # surface validation errors (fix #3)
-
-    # Save any results that DID complete before we repoint the job to a new batch.
-    # Otherwise the completed subset of an expired/partial batch is lost when we
-    # null out output_file_id below (fix #1). Reuse the harvest to also identify
-    # exactly which requests need resubmitting (fix #2).
-    custom_to_stem = {info["custom_id"]: stem for stem, info in state["images"].items()}
-    if state.get("status") != "fetched":
-        state["output_file_id"] = batch.output_file_id
-        state["error_file_id"]  = batch.error_file_id
-        _save_state(state)
-        if batch.output_file_id or batch.error_file_id:
-            print("Saving results from the current batch before retrying...\n")
-            _harvest_results(state, run_phase2=False, suggest_retry=False)
-            print()
-
-    # Harvest records exactly which requests need resubmitting (failed + incomplete
-    # + missing) in state["needs_retry"]. Fall back to the error file only for state
-    # files written before that key existed.
-    if state.get("needs_retry") is not None:
-        failed_custom_ids = set(state["needs_retry"])
+    # Refresh live status, roll each finished member's files in, then harvest any
+    # finished-but-unharvested member so its needs_retry is populated before we
+    # repoint it (preserves completed pages — fix #1 — and identifies retries #2).
+    idx, _ = _refresh_members(state)
+    unharvested = [m for m in state["batches"]
+                   if m.get("status") != "fetched"
+                   and (m.get("output_file_id") or m.get("error_file_id"))]
+    if unharvested:
+        print("Saving results from finished batches before retrying...\n")
+        _harvest_results(state, run_phase2=False, suggest_retry=False)
+        print()
     else:
-        error_file_id = batch.error_file_id
-        if not error_file_id:
-            print("No error file on this batch — nothing to retry.")
-            return
-        print(f"Reading error file ({error_file_id})...", end=" ", flush=True)
-        error_lines, _ = _download_jsonl(error_file_id)
-        print(f"{len(error_lines)} records")
-        failed_custom_ids = _failed_custom_ids(error_lines)
+        _save_state(state)
 
-    if not failed_custom_ids:
-        print("No unfinished requests to retry — nothing to do.")
+    prev_batches = _member_batch_ids(state)   # capture BEFORE repointing (for ledger)
+
+    # A member is retryable only once it is terminal (fetched). Members still
+    # running are left alone; we can retry the finished ones now.
+    finished = [m for m in state["batches"] if m.get("status") == "fetched"]
+    running  = [m for m in state["batches"]
+                if (idx.get(m.get("batch_id")) or _StubStatus(m)).status
+                not in _FETCHABLE + ("failed",)]
+    if not finished:
+        print("No finished batches yet — wait for them before retrying.")
         return
 
-    # Map custom_id back to image stem
-    failed_stems = [custom_to_stem[cid] for cid in failed_custom_ids if cid in custom_to_stem]
+    # Per-scan retry cap: stop re-batching a request once it has had
+    # MAX_SCAN_ATTEMPTS batch attempts; report it for the synchronous fallback.
+    attempts  = _scan_attempts(state)
+    exhausted = set()
 
-    print(f"\nRequests to resubmit ({len(failed_stems)}):")
-    for stem in failed_stems:
-        print(f"  {stem}")
+    # Collect the retry work per member (each member re-batches its OWN failed
+    # subset into a fresh batch, so the fan-out granularity is preserved).
+    plan = []   # (member, [custom_ids to retry])
+    for m in finished:
+        needs = set(m.get("needs_retry") or [])
+        if not needs:
+            continue
+        retryable = {c for c in needs if attempts.get(c, 1) < MAX_SCAN_ATTEMPTS}
+        exhausted |= (needs - retryable)
+        if retryable:
+            plan.append((m, sorted(retryable)))
+
+    if exhausted:
+        stems = sorted(custom_to_stem.get(c, c) for c in exhausted)
+        print(f"⚠  {len(exhausted)} request(s) hit the {MAX_SCAN_ATTEMPTS}-attempt cap — NOT "
+              f"re-batched. Run these synchronously (transcribe.py) instead:")
+        for s in stems:
+            print(f"     {s}")
+        print()
+
+    if not plan:
+        if running:
+            print(f"Nothing retryable right now ({len(running)} batch(es) still running).")
+        else:
+            print("No unfinished requests to retry — nothing to do.")
+        return
+
+    n_retry = sum(len(cids) for _, cids in plan)
+    print(f"Resubmitting {n_retry} request(s) across {len(plan)} fresh batch(es):")
+    for m, cids in plan:
+        print(f"  b{m['index']:04d}: {', '.join(custom_to_stem.get(c, c) for c in cids)}")
 
     # Same guard as submit: a blind retry into a near-empty balance is exactly
     # what turned the 2026-07-03 run into a second retry storm.
-    _preflight_balance_check(len(failed_stems), state["config"]["model"], args)
+    _preflight_balance_check(n_retry, cfg["model"], args)
 
-    # Load the same prompt the job was originally prepared with, so a retry
-    # never silently switches prompts out from under an in-flight job (falls
-    # back to first-found for state files predating the prompt_file key).
-    cfg    = state["config"]
+    # Load the same prompt the job was originally prepared with, so a retry never
+    # silently switches prompts (falls back to first-found for older state files).
     prompt_file = (PROMPT_DIR / cfg["prompt_file"]) if cfg.get("prompt_file") else _resolve_prompt(None)
     prompt_text = prompt_file.read_text(encoding="utf-8")
+    tools = [{"type": "code_interpreter", "container": {"type": "auto"}}] if cfg["use_ci"] else []
 
-    use_ci = cfg["use_ci"]
-    tools  = [{"type": "code_interpreter", "container": {"type": "auto"}}] if use_ci else []
+    now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    for m, cids in plan:
+        retry_path = JOBS_DIR / f"{args.job}_b{m['index']:04d}_retry.jsonl"
+        with retry_path.open("w", encoding="utf-8") as fh:
+            for cid in cids:
+                stem = custom_to_stem[cid]
+                info = state["images"][stem]
+                fh.write(json.dumps({
+                    "custom_id": info["custom_id"],
+                    "method":    "POST",
+                    "url":       "/v1/responses",
+                    "body": {
+                        "model":     cfg["model"],
+                        "reasoning": {"effort": cfg["effort"]},
+                        "tools":     tools,
+                        "input": [{
+                            "role": "user",
+                            "content": [
+                                {"type": "input_text",  "text": prompt_text},
+                                {"type": "input_image", "file_id": info["file_id"], "detail": "high"},
+                            ],
+                        }],
+                    },
+                }, ensure_ascii=False) + "\n")
 
-    # Build retry JSONL with only the failed requests
-    retry_jsonl_path = JOBS_DIR / f"{args.job}_retry.jsonl"
-    with retry_jsonl_path.open("w", encoding="utf-8") as fh:
-        for stem in failed_stems:
-            info = state["images"][stem]
-            line = {
-                "custom_id": info["custom_id"],
-                "method":    "POST",
-                "url":       "/v1/responses",
-                "body": {
-                    "model":     cfg["model"],
-                    "reasoning": {"effort": cfg["effort"]},
-                    "tools":     tools,
-                    "input": [{
-                        "role": "user",
-                        "content": [
-                            {"type": "input_text",  "text": prompt_text},
-                            {"type": "input_image", "file_id": info["file_id"], "detail": "high"},
-                        ],
-                    }],
-                },
-            }
-            fh.write(json.dumps(line, ensure_ascii=False) + "\n")
+        with retry_path.open("rb") as fh:
+            upload = client.files.create(file=fh, purpose="batch")
+        retry_batch = client.batches.create(
+            input_file_id=upload.id,
+            endpoint="/v1/responses",
+            completion_window="24h",
+        )
 
-    # Submit retry batch
-    print(f"\nUploading retry JSONL ({len(failed_stems)} requests)...", end=" ", flush=True)
-    with retry_jsonl_path.open("rb") as fh:
-        upload = client.files.create(file=fh, purpose="batch")
-    print(upload.id)
+        # Archive the old batch on THIS member and repoint it to the retry batch.
+        m.setdefault("previous_batches", []).append({
+            "batch_id":   m["batch_id"],
+            "status":     m.get("status"),
+            "n_retried":  len(cids),
+            "retried_at": now_iso,
+        })
+        m["batch_id"]       = retry_batch.id
+        m["jsonl_path"]     = str(retry_path)
+        m["jsonl_file_id"]  = upload.id
+        m["custom_ids"]     = list(cids)
+        m["status"]         = "submitted"
+        m["output_file_id"] = None
+        m["error_file_id"]  = None
+        m["completed_at"]   = None
+        m["needs_retry"]    = None
+        _save_state(state)
+        print(f"  b{m['index']:04d} → {retry_batch.id}")
 
-    print("Creating retry batch...", end=" ", flush=True)
-    retry_batch = client.batches.create(
-        input_file_id=upload.id,
-        endpoint="/v1/responses",
-        completion_window="24h",
-    )
-    print(retry_batch.id)
-
-    # Update state: preserve previous batch history, point to new batch
-    state.setdefault("previous_batches", [])
-    state["previous_batches"].append({
-        "batch_id":   state["batch_id"],
-        "status":     batch.status,
-        "n_retried":  len(failed_stems),
-        "retried_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-    })
-    state["batch_id"]       = retry_batch.id
-    state["jsonl_file_id"]  = upload.id
-    state["status"]         = "submitted"
-    state["output_file_id"] = None
-    state["error_file_id"]  = None
-    state["completed_at"]   = None
-    state["needs_retry"]    = None   # belongs to the previous batch; clear it
+    _sync_job_status(state)
     _save_state(state)
 
-    print(f"\nRetry batch submitted with {len(failed_stems)} request(s).")
+    print(f"\n{len(plan)} retry batch(es) submitted ({n_retry} request(s)).")
     print(f"Check status → python batch_transcribe.py status --job {args.job}")
 
-    _safe_update_ledger()   # record the previous batch's harvested outcome
+    _safe_update_ledger(prev_batches)   # record the previous batches' harvested outcome
 
 
 # ---------------------------------------------------------------------------
 # Stage 6: watch — live cost watchdog
 # ---------------------------------------------------------------------------
 
+def _poll_fleet(batch_ids):
+    """Retrieve every batch in the fleet and aggregate. Returns
+    (batches_by_id, total, completed, failed, created_min, expires_max, n_running).
+    A missing batch counts as still-running so we never falsely declare done."""
+    idx = _fetch_batch_index(batch_ids)
+    total = completed = failed = n_running = 0
+    created_min = expires_max = None
+    for bid in batch_ids:
+        b = idx.get(bid)
+        if b is None:
+            n_running += 1          # couldn't read it — assume not done
+            continue
+        rc = b.request_counts
+        if rc:
+            total     += rc.total or 0
+            completed += rc.completed or 0
+            failed    += rc.failed or 0
+        if b.created_at:
+            created_min = b.created_at if created_min is None else min(created_min, b.created_at)
+        if b.expires_at:
+            expires_max = b.expires_at if expires_max is None else max(expires_max, b.expires_at)
+        if b.status not in ("completed", "failed", "expired", "cancelled"):
+            n_running += 1
+    return idx, total, completed, failed, created_min, expires_max, n_running
+
+
 def cmd_watch(args):
     if getattr(args, "selftest", False):
         sys.exit(_watchdog_selftest())
 
-    # Resolve batch_id + model, from a job state file or directly from CLI.
+    # Resolve the FLEET of batch_ids to watch — every member of a job, or a single
+    # batch given directly. The watchdog treats them as one unit: it aggregates
+    # counts + cost across the whole fleet and, on a trip, cancels ALL of them.
     state = None
     if args.job:
-        state    = _load_state(args.job)
-        batch_id = state.get("batch_id")
-        if not batch_id:
-            sys.exit(f"Job '{args.job}' has no batch_id yet — submit first.")
+        state     = _load_state(args.job)
+        batch_ids = _member_batch_ids(state)
+        if not batch_ids:
+            sys.exit(f"Job '{args.job}' has no submitted batches yet — submit first.")
         model = state["config"]["model"]
         label = args.job
     elif args.batch_id:
-        batch_id = args.batch_id
-        model    = args.model or DEFAULT_MODEL
-        label    = batch_id
+        batch_ids = [args.batch_id]
+        model     = args.model or DEFAULT_MODEL
+        label     = args.batch_id
     else:
         sys.exit("Provide --job, or --batch-id (+ --model) to watch an arbitrary batch.")
 
@@ -1137,56 +1441,55 @@ def cmd_watch(args):
         with log_path.open("a", encoding="utf-8") as fh:
             fh.write(line + "\n")
 
-    print(f"Watchdog  : {label}  (batch {batch_id}, model {model})")
+    print(f"Watchdog  : {label}  (FLEET of {len(batch_ids)} batch(es), model {model})")
     print(f"Guardrails: {', '.join(sorted(enabled)) or 'NONE'}   on-trip: {args.on_trip}")
     print(f"Log       : {log_path}\n")
-    log(f"# watchdog start {ts} batch={batch_id} model={model} "
+    log(f"# watchdog start {ts} fleet={len(batch_ids)} model={model} "
         f"guardrails={sorted(enabled)} on_trip={args.on_trip} cfg={cfg}")
 
-    TERMINAL = {"completed", "failed", "expired", "cancelled"}
-    handled  = False          # already alerted/cancelled — stop re-evaluating
+    handled    = False        # already alerted/cancelled — stop re-evaluating
     cancelling = False
-    batch = None
 
     while True:
         try:
-            batch = client.batches.retrieve(batch_id)
+            idx, total, completed, failed, created_min, expires_max, n_running = \
+                _poll_fleet(batch_ids)
         except Exception as exc:
             print(f"  [poll error] {exc}")
             time.sleep(interval_base)
             continue
 
-        status  = batch.status
-        counts  = batch.request_counts
-        total     = counts.total     if counts else 0
-        completed = counts.completed if counts else 0
-        failed    = counts.failed    if counts else 0
-        created   = batch.created_at
-        now       = datetime.datetime.now(datetime.timezone.utc).timestamp()
-        elapsed_min = (now - created) / 60 if created else 0
+        now         = datetime.datetime.now(datetime.timezone.utc).timestamp()
+        elapsed_min = (now - created_min) / 60 if created_min else 0
 
-        # Lagging cost/execution signal — only when a risk cue is present (efficiency).
+        # Lagging cost/execution signal — org-wide batch usage since the earliest
+        # member was created == the fleet's cost (see _admin_usage_since). Only
+        # queried when a risk cue is present (efficiency).
         execs = cost = None
         risk_cue = failed > 0 or completed > 0 or elapsed_min > 3
-        if ADMIN_KEY and (enabled & {"storm","cost-per-page","spend","stall"}) and risk_cue:
-            usage = _admin_usage_since(created)
+        if ADMIN_KEY and (enabled & {"storm","cost-per-page","spend","stall"}) and risk_cue and created_min:
+            usage = _admin_usage_since(created_min)
             if usage:
                 execs, in_tok, out_tok = usage
                 cost, *_ = _cost_line(in_tok, out_tok, 0, model, batch=True)
 
+        # Fleet snapshot: total = requests submitted across ALL members, so the
+        # failure-ratio guardrail is meaningful again (it is degenerate at N=1).
         snap = {"total": total, "completed": completed, "failed": failed,
                 "execs": execs, "live_cost": cost, "elapsed_min": elapsed_min}
 
         cost_s = f"${cost:.2f}" if cost is not None else "n/a"
         exec_s = str(execs) if execs is not None else "n/a"
-        line = (f"[{datetime.datetime.now().strftime('%H:%M:%S')}] {status:11} "
-                f"{completed}/{total} done, {failed} failed | execs {exec_s} | "
+        done_b = len(batch_ids) - n_running
+        line = (f"[{datetime.datetime.now().strftime('%H:%M:%S')}] "
+                f"batches {done_b}/{len(batch_ids)} done | "
+                f"{completed}/{total} req done, {failed} failed | execs {exec_s} | "
                 f"billed {cost_s} | {elapsed_min:.0f}m")
         print("  " + line); log(line)
 
-        if status in TERMINAL:
-            print(f"\nBatch reached terminal state: {status}")
-            log(f"# terminal {status}")
+        if n_running == 0:
+            print(f"\nFleet reached terminal state ({len(batch_ids)} batch(es) done).")
+            log("# terminal fleet")
             break
 
         # Evaluate guardrails until we've acted once.
@@ -1202,7 +1505,7 @@ def cmd_watch(args):
                     handled = True
                 else:
                     if args.on_trip == "grace":
-                        print("  → cancelling in 60s unless you press Ctrl-C to abort...")
+                        print("  → cancelling the fleet in 60s unless you press Ctrl-C to abort...")
                         try:
                             time.sleep(60)
                         except KeyboardInterrupt:
@@ -1211,25 +1514,31 @@ def cmd_watch(args):
                             handled = True
                             time.sleep(interval_base)
                             continue
-                    print("  → CANCELLING batch to stop the burn.")
-                    try:
-                        client.batches.cancel(batch_id)
-                        log("# cancel issued")
-                        cancelling = True
-                    except Exception as exc:
-                        print(f"  cancel error: {exc}")
-                        log(f"# cancel error {exc}")
+                    # Cancel EVERY still-running member to stop the burn fleet-wide.
+                    running_ids = [bid for bid in batch_ids
+                                   if (idx.get(bid) is None
+                                       or idx[bid].status not in
+                                       ("completed","failed","expired","cancelled"))]
+                    print(f"  → CANCELLING {len(running_ids)} running batch(es) to stop the burn.")
+                    for bid in running_ids:
+                        try:
+                            client.batches.cancel(bid)
+                            log(f"# cancel issued {bid}")
+                        except Exception as exc:
+                            print(f"  cancel error {bid}: {exc}")
+                            log(f"# cancel error {bid} {exc}")
+                    cancelling = True
                     handled = True
 
-        if batch.expires_at and now > batch.expires_at:
-            print("Batch past expiry — stopping watch.")
+        if expires_max and now > expires_max:
+            print("Fleet past expiry — stopping watch.")
             break
 
         time.sleep(cfg["interval_risk"] if (risk_cue or cancelling) else interval_base)
 
-    # Final billed cost.
-    if ADMIN_KEY and batch is not None and batch.created_at:
-        usage = _admin_usage_since(batch.created_at)
+    # Final billed cost (fleet).
+    if ADMIN_KEY and created_min:
+        usage = _admin_usage_since(created_min)
         if usage:
             execs, in_tok, out_tok = usage
             cost, *_ = _cost_line(in_tok, out_tok, 0, model, batch=True)
@@ -1237,19 +1546,18 @@ def cmd_watch(args):
                   f"{in_tok:,} in / {out_tok:,} out")
             log(f"# final ${cost:.2f} execs={execs} in={in_tok} out={out_tok}")
 
-    # Harvest completed results (only possible with a job state file).
-    if state is not None and not args.no_fetch and batch is not None \
-            and batch.status in ("completed", "expired", "cancelled"):
-        state["status"]         = batch.status
-        state["output_file_id"] = batch.output_file_id
-        state["error_file_id"]  = batch.error_file_id
+    # Harvest completed results across the fleet (only possible with a job state).
+    if state is not None and not args.no_fetch:
+        _refresh_members(state)
         _save_state(state)
-        print("\nHarvesting completed results...")
+        print("\nHarvesting completed results across the fleet...")
         _harvest_results(state, run_phase2=False, suggest_retry=False)
+        _safe_update_ledger(_member_batch_ids(state))
     elif state is None and not args.no_fetch:
         print("\n(no job state — skipping harvest; run `fetch --job <name>` to save results)")
-
-    _safe_update_ledger(state.get("batch_id") if state else batch_id)
+        _safe_update_ledger(batch_ids)
+    else:
+        _safe_update_ledger(_member_batch_ids(state) if state else batch_ids)
 
 
 # ---------------------------------------------------------------------------
@@ -1323,8 +1631,10 @@ def _scan_sync_logs():
 
 
 def _batchid_meta():
-    """Map every known batch_id (current + previous_batches) to its job metadata
-    from the local state files, so the ledger can name batches and show config."""
+    """Map every known batch_id to its job metadata from the local state files, so
+    the ledger can name batches and show config. Covers the new fan-out members
+    (state["batches"][].batch_id + their previous_batches) AND legacy single-batch
+    state (top-level batch_id + previous_batches)."""
     meta = {}
     for p in sorted(JOBS_DIR.glob("*.json")):
         try:
@@ -1335,11 +1645,20 @@ def _batchid_meta():
         info = {"job": st.get("job_name", p.stem),
                 "model": cfg.get("model"), "effort": cfg.get("effort"),
                 "ci": cfg.get("use_ci")}
-        if st.get("batch_id"):
-            meta[st["batch_id"]] = info
+
+        def _record(bid):
+            if bid:
+                meta[bid] = info
+
+        # New fan-out shape: many member batches, each with its own retry history.
+        for m in st.get("batches", []) or []:
+            _record(m.get("batch_id"))
+            for prev in m.get("previous_batches", []) or []:
+                _record(prev.get("batch_id"))
+        # Legacy single-batch shape.
+        _record(st.get("batch_id"))
         for prev in st.get("previous_batches", []) or []:
-            if prev.get("batch_id"):
-                meta[prev["batch_id"]] = info
+            _record(prev.get("batch_id"))
     return meta
 
 
@@ -1576,8 +1895,9 @@ def _render_ledger_md(ledger):
 
 def _update_ledger(only_batch_id=None, full=False):
     """Refresh the ledger. `full` re-lists every batch (backfill); otherwise only
-    `only_batch_id` is (re)captured. Always re-renders the Markdown from the full
-    stored JSON. Returns the ledger dict."""
+    `only_batch_id` is (re)captured — it may be a single id or a list of ids (the
+    fan-out passes every member of a job). Always re-renders the Markdown from the
+    full stored JSON. Returns the ledger dict."""
     LEDGER_JSON.parent.mkdir(parents=True, exist_ok=True)
     ledger = json.loads(LEDGER_JSON.read_text(encoding="utf-8")) if LEDGER_JSON.exists() \
              else {"batches": {}}
@@ -1586,10 +1906,15 @@ def _update_ledger(only_batch_id=None, full=False):
     if full:
         batches = _list_all_batches()
     elif only_batch_id:
-        try:
-            batches = [client.batches.retrieve(only_batch_id)]
-        except Exception:
-            batches = []
+        ids = only_batch_id if isinstance(only_batch_id, (list, tuple, set)) else [only_batch_id]
+        batches = []
+        for bid in ids:
+            if not bid:
+                continue
+            try:
+                batches.append(client.batches.retrieve(bid))
+            except Exception:
+                pass
     else:
         batches = []
 
@@ -1624,7 +1949,8 @@ def _list_all_batches():
 
 
 def _safe_update_ledger(batch_id=None, full=False):
-    """Never let a ledger refresh break the calling pipeline stage."""
+    """Never let a ledger refresh break the calling pipeline stage. `batch_id` may
+    be a single id or a list of ids (a whole fan-out job's members)."""
     try:
         _update_ledger(only_batch_id=batch_id, full=full)
     except Exception as exc:
@@ -1676,6 +2002,10 @@ def build_parser():
                         help="Max number of images to include, counted from --start if given")
     p_prep.add_argument("--job",          type=str, default=None,
                         help="Job name / state file stem (auto-generated if omitted)")
+    p_prep.add_argument("--batch-size",   type=int, default=DEFAULT_BATCH_SIZE,
+                        help=f"Requests per OpenAI batch (default: {DEFAULT_BATCH_SIZE} = one "
+                             f"request per batch, max fault isolation). The job fans out into "
+                             f"ceil(N/batch-size) independent batches.")
     p_prep.add_argument("--reuse-files",  action="store_true",
                         help="Skip re-uploading images already recorded in the state file")
 
@@ -1688,8 +2018,12 @@ def build_parser():
                             "unless it clears a conservative worst-case buffer (prompted if omitted)")
     p_sub.add_argument("--skip-balance-check", action="store_true",
                        help="Bypass the pre-submit balance guard (not recommended)")
+    p_sub.add_argument("--pause", type=float, default=None,
+                       help="Seconds to sleep between batch-create calls (default: auto — "
+                            f"paces at {BATCH_CREATE_PACE_SECONDS}s only when a fan-out exceeds "
+                            f"{BATCH_CREATE_PACE_THRESHOLD} batches to stay under the ~{BATCH_CREATE_HOURLY_LIMIT}/hr cap)")
     p_sub.add_argument("--watch", action="store_true",
-                       help="Immediately launch the cost watchdog (default guardrails) after submitting")
+                       help="Immediately launch the fleet cost watchdog (default guardrails) after submitting")
 
     # ── status ───────────────────────────────────────────────────────────────
     p_sta = sub.add_parser("status", help="Check batch progress")
