@@ -38,6 +38,7 @@ import re
 from pathlib import Path
 
 from docx import Document
+from docx.shared import Inches, Pt
 # markdown + weasyprint are imported lazily inside markdown_to_pdf so that the
 # .docx / --combine path works even when those (heavier) libs aren't installed.
 
@@ -144,18 +145,63 @@ def markdown_to_pdf(markdown_text: str, pdf_path: Path, title: str) -> None:
     HTML(string=full_html).write_pdf(str(pdf_path))
 
 
-def _render_text_into_doc(doc, text: str, indent_mult: int = 1) -> None:
+def _add_bold_runs(paragraph, line: str) -> None:
+    """Add `line` to `paragraph`, rendering each **...** span as a bold run."""
+    for chunk in _BOLD_SPAN.split(line):
+        if not chunk:
+            continue
+        if chunk.startswith("**") and chunk.endswith("**") and len(chunk) >= 4:
+            paragraph.add_run(chunk[2:-2]).bold = True
+        else:
+            paragraph.add_run(chunk)
+
+
+def _render_text_into_doc(doc, text: str, indent_mult: int = 1,
+                          word_indent_in: float | None = None) -> None:
     """Append Step-2 text to an open docx Document: a paragraph per blank-line
     block, a line break per '\\n' within a block, and a bold run for each
     **...** span (so {HEADING}-derived headings render bold). {LB} and {INDENT}
     are already rendered to newlines/spaces by Phase 2, so they carry through.
 
-    ``indent_mult`` multiplies each line's leading indentation (the {INDENT}
-    spaces), e.g. 2 = twice as deep."""
+    Indentation has two modes:
+      * ``indent_mult`` (default) multiplies each line's leading {INDENT} spaces,
+        e.g. 2 = twice as deep. Simple but a soft, font-dependent indent.
+      * ``word_indent_in`` (inches), if given, uses REAL Word first-line
+        indentation instead: an indented ({INDENT}) line starts a new paragraph
+        with a genuine first-line indent of that many inches, and its following
+        flush lines are its wrapped continuation. Reliable and clearly visible;
+        overrides ``indent_mult``."""
     blocks = re.split(r"\n\s*\n", text.strip("\n"))
     for block in blocks:
-        paragraph = doc.add_paragraph()
         lines = block.split("\n")
+
+        if word_indent_in:
+            # Group lines into paragraphs: a new paragraph begins at each
+            # indented line (its {INDENT} becomes a real first-line indent);
+            # subsequent flush lines are that paragraph's wrapped continuation.
+            groups: list[dict] = []
+            for line in lines:
+                indented = (len(line) - len(line.lstrip(" "))) > 0
+                if indented or not groups:
+                    groups.append({"indent": indented, "lines": [line.lstrip(" ")]})
+                else:
+                    groups[-1]["lines"].append(line)
+            for gi, g in enumerate(groups):
+                p = doc.add_paragraph()
+                pf = p.paragraph_format
+                pf.space_before = Pt(0)
+                # tight within a block; a small gap after the block's last line
+                pf.space_after = Pt(8) if gi == len(groups) - 1 else Pt(0)
+                if g["indent"]:
+                    pf.first_line_indent = Inches(word_indent_in)
+                for li, line in enumerate(g["lines"]):
+                    if li > 0:
+                        p.add_run().add_break()
+                    _add_bold_runs(p, line)
+            continue
+
+        # Default: soft line breaks within one paragraph, leading-space indent.
+        paragraph = doc.add_paragraph()
         for i, line in enumerate(lines):
             if i > 0:
                 paragraph.add_run().add_break()
@@ -163,30 +209,27 @@ def _render_text_into_doc(doc, text: str, indent_mult: int = 1) -> None:
                 body = line.lstrip(" ")
                 lead = len(line) - len(body)
                 line = " " * (lead * indent_mult) + body
-            for chunk in _BOLD_SPAN.split(line):
-                if not chunk:
-                    continue
-                if chunk.startswith("**") and chunk.endswith("**") and len(chunk) >= 4:
-                    paragraph.add_run(chunk[2:-2]).bold = True
-                else:
-                    paragraph.add_run(chunk)
+            _add_bold_runs(paragraph, line)
 
 
-def txt_to_docx(text: str, docx_path: Path, indent_mult: int = 1) -> None:
+def txt_to_docx(text: str, docx_path: Path, indent_mult: int = 1,
+                word_indent_in: float | None = None) -> None:
     """Build a single-file .docx from Step-2 text."""
     doc = Document()
-    _render_text_into_doc(doc, text, indent_mult)
+    _render_text_into_doc(doc, text, indent_mult, word_indent_in)
     doc.save(str(docx_path))
 
 
-def combine_to_docx(in_paths, docx_path: Path, indent_mult: int = 1) -> None:
+def combine_to_docx(in_paths, docx_path: Path, indent_mult: int = 1,
+                    word_indent_in: float | None = None) -> None:
     """Combine many Step-2 .txt files into ONE .docx, one transcription per
     page (a page break separates each). Inputs are used in the order given."""
     doc = Document()
     for i, p in enumerate(in_paths):
         if i > 0:
             doc.add_page_break()
-        _render_text_into_doc(doc, Path(p).read_text(encoding="utf-8"), indent_mult)
+        _render_text_into_doc(doc, Path(p).read_text(encoding="utf-8"),
+                              indent_mult, word_indent_in)
     doc.save(str(docx_path))
 
 
@@ -234,12 +277,20 @@ def main(argv=None) -> int:
                      help="Combine ALL inputs into one .docx at this path, "
                           "one transcription per page (page break between each)")
     ap.add_argument("--indent-mult", type=int, default=1,
-                     help="Multiply paragraph indentation depth (e.g. 2 = twice as deep)")
+                     help="Multiply the leading-space {INDENT} depth (e.g. 2 = twice as deep). "
+                          "A soft, font-dependent indent.")
+    ap.add_argument("--word-indent", type=float, default=None, metavar="INCHES",
+                     help="Use REAL Word first-line indentation of this many inches on "
+                          "indented paragraphs (e.g. 0.5) instead of leading spaces. "
+                          "Reliable and clearly visible; overrides --indent-mult.")
     args = ap.parse_args(argv)
 
     if args.combine:
-        combine_to_docx(args.inputs, args.combine, indent_mult=args.indent_mult)
-        print(f"Combined {len(args.inputs)} file(s) -> {args.combine}  (indent x{args.indent_mult})")
+        combine_to_docx(args.inputs, args.combine, indent_mult=args.indent_mult,
+                        word_indent_in=args.word_indent)
+        note = (f"real first-line indent {args.word_indent}\""
+                if args.word_indent else f"indent x{args.indent_mult}")
+        print(f"Combined {len(args.inputs)} file(s) -> {args.combine}  ({note})")
         return 0
 
     requested = tuple(f for f in FORMATS if getattr(args, f))
