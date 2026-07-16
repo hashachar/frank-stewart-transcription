@@ -1,0 +1,14 @@
+Indetation
+See if there is a distinction between 'ayn and apostrophe (the model distinguises well).
+Find a tool that can recognize English words, and if a word is not English then change "q" to "g"
+Try using 5.6
+Find a way to correct English words that were misspleed (like enmixty) or "theywere"
+
+English matters is secondary
+
+Try to direct his attention to A with macron (that the AI often misses)
+
+Standrdize the UNICODE
+
+
+Start with running 5.6 on first 26 scans and send a comparison

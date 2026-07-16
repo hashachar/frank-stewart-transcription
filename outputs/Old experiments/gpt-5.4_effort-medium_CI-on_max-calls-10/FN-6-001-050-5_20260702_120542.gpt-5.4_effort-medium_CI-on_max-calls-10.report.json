@@ -1,0 +1,29 @@
+{
+  "source": "../outputs/gpt-5.4_effort-medium_CI-on_max-calls-10/FN-6-001-050-5_20260702_120542.txt",
+  "generated_at": "2026-07-02T18:36:04.512460+00:00",
+  "module_version": "2.4",
+  "unicode_form": "NFC",
+  "profiles": [
+    "literal",
+    "normalized"
+  ],
+  "symbol_counts": {
+    "acute": 10,
+    "apostrophe-ayn": 20,
+    "dotbelow": 31,
+    "macron": 38
+  },
+  "n_flags": 1,
+  "flags": [
+    {
+      "type": "stray-brace",
+      "token": "}",
+      "position": 2333,
+      "note": "unmatched brace; check Step-1 output"
+    }
+  ],
+  "outputs": [
+    "../outputs/gpt-5.4_effort-medium_CI-on_max-calls-10/FN-6-001-050-5_20260702_120542.gpt-5.4_effort-medium_CI-on_max-calls-10.literal.txt",
+    "../outputs/gpt-5.4_effort-medium_CI-on_max-calls-10/FN-6-001-050-5_20260702_120542.gpt-5.4_effort-medium_CI-on_max-calls-10.normalized.txt"
+  ]
+}

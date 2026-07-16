@@ -1,0 +1,21 @@
+{
+  "source": "../outputs/gpt-5.6-sol_effort-high_CI-on_Phase1e/FN-0018_20260715_162847.txt",
+  "generated_at": "2026-07-16T02:37:18.205916+00:00",
+  "module_version": "2.4",
+  "unicode_form": "NFC",
+  "profiles": [
+    "literal",
+    "normalized"
+  ],
+  "symbol_counts": {
+    "acute": 5,
+    "dotabove": 1,
+    "dotbelow": 23,
+    "macron": 32
+  },
+  "n_flags": 0,
+  "flags": [],
+  "outputs": [
+    "../outputs/gpt-5.6-sol_effort-high_CI-on_Phase1e/FN-0018_20260715_162847.gpt-5.6-sol_effort-high_CI-on_Phase1e.literal.txt"
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "source": "outputs/gpt-5.5_effort-medium_CI-on_Phase1e/FN-6-001-050-5_20260702_224045.txt",
+  "generated_at": "2026-07-03T05:25:50.955537+00:00",
+  "module_version": "2.4",
+  "unicode_form": "NFC",
+  "profiles": [
+    "literal",
+    "normalized"
+  ],
+  "symbol_counts": {
+    "acute": 10,
+    "dotabove": 1,
+    "dotbelow": 30,
+    "macron": 40
+  },
+  "n_flags": 0,
+  "flags": [],
+  "outputs": [
+    "outputs/gpt-5.5_effort-medium_CI-on_Phase1e/FN-6-001-050-5_20260702_224045.gpt-5.5_effort-medium_CI-on_Phase1e.literal.txt",
+    "outputs/gpt-5.5_effort-medium_CI-on_Phase1e/FN-6-001-050-5_20260702_224045.gpt-5.5_effort-medium_CI-on_Phase1e.normalized.txt"
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "source": "outputs/gpt-5.5_effort-high_CI-on_Phase1f/FN-6-001-050-1_20260702_222809.txt",
+  "generated_at": "2026-07-03T05:25:51.888707+00:00",
+  "module_version": "2.4",
+  "unicode_form": "NFC",
+  "profiles": [
+    "literal",
+    "normalized"
+  ],
+  "symbol_counts": {
+    "acute": 6,
+    "dotbelow": 28,
+    "macron": 47,
+    "theta-symbol": 2
+  },
+  "n_flags": 0,
+  "flags": [],
+  "outputs": [
+    "outputs/gpt-5.5_effort-high_CI-on_Phase1f/FN-6-001-050-1_20260702_222809.gpt-5.5_effort-high_CI-on_Phase1f.literal.txt",
+    "outputs/gpt-5.5_effort-high_CI-on_Phase1f/FN-6-001-050-1_20260702_222809.gpt-5.5_effort-high_CI-on_Phase1f.normalized.txt"
+  ]
+}

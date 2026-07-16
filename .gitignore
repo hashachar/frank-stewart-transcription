@@ -1,6 +1,18 @@
+# --- Secrets ---
 .env
+scripts/.env
+
+# --- Heavy source images (242 MB of scans; not preserved in git) ---
+scans/
+
+# --- Raw API response logs (bulky; durable summary lives in reports/batch_ledger.json) ---
+logs/
+
+# --- Python / tooling caches ---
 __pycache__/
 *.pyc
 
-
+# --- Editor / OS / Office cruft ---
+.DS_Store
+~$*
 .claude/

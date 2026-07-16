@@ -1,0 +1,23 @@
+{
+  "source": "../outputs/expanded diacritics/gpt-5.5_effort-medium_CI-on/FN-6-001-050-3_20260702_090927.txt",
+  "generated_at": "2026-07-02T17:11:23.438634+00:00",
+  "module_version": "2.4",
+  "unicode_form": "NFC",
+  "profiles": [
+    "literal",
+    "normalized"
+  ],
+  "symbol_counts": {
+    "acute": 4,
+    "apostrophe-ayn": 18,
+    "dotabove": 1,
+    "dotbelow": 24,
+    "macron": 43
+  },
+  "n_flags": 0,
+  "flags": [],
+  "outputs": [
+    "../outputs/expanded diacritics/gpt-5.5_effort-medium_CI-on/FN-6-001-050-3_20260702_090927.gpt-5.5_effort-medium_CI-on.literal.txt",
+    "../outputs/expanded diacritics/gpt-5.5_effort-medium_CI-on/FN-6-001-050-3_20260702_090927.gpt-5.5_effort-medium_CI-on.normalized.txt"
+  ]
+}

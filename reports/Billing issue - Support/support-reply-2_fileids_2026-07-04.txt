@@ -1,0 +1,23 @@
+Confirmed — all three batches and their charges are in org-BH1YvLA2OI41CevsyGEb5jp7 (project proj_eNdWq3WgIuAZZUILLVZLgU35).
+
+File IDs per batch:
+
+batch_6a482b22b14481909cb74e9a61327845 (completed — 20 submitted / 3 completed / 17 failed)
+  output_file_id: file-2WNsjAMVHQq8oe4ZLyViCk
+  error_file_id:  file-SkupFeHTm6Hm7ak72o4Bs1
+
+batch_6a4858b31da081909c6abab3c42a7e74 (completed — 17 submitted / 3 completed / 14 failed)
+  output_file_id: file-39ija6vLftMfonLPtWsHs2
+  error_file_id:  file-J9QzpGmc1Ezj7vVMfzapV7
+
+batch_6a48a41f79348190a4b9921d50adad51 (cancelled — 6 submitted / 2 completed / 3 failed)
+  output_file_id: file-6CsE3VxRQznonTMqtCmV25
+  error_file_id:  file-T22HAsoZQTnCrCREaL7t9g
+
+One important clarification so we're aligned: I'm not disputing the "charged for completed work" expectation. I accept the charge for the 8 completed requests ($2.38) — you can confirm those in the three output files above.
+
+What I'm disputing is everything billed beyond my submitted requests. The output + error files together account for only the 43 logical requests I submitted (8 completed + 35 failed). But the billing for these three batches shows 89 model executions and ~4.81M input / 2.14M output tokens (per GET /v1/organization/usage/completions, num_model_requests, grouped by batch, 2026-07-03/04). That is 2.07x the 43 requests I submitted — about 46 executions that correspond to no request in my input files, returned no output, and appear to be internal retries of the failed requests.
+
+So the reconciliation I'm requesting is between the batch objects' request_counts (43 total) and the usage API's num_model_requests (89) for these three batch IDs. The $41.20 is exactly that gap: $43.58 billed minus $2.38 of completed work.
+
+(For batch_6a48...ad51, note it ran on a fully funded balance and its failures were server-side HTTP 400/503. The same FN-0006 request that returned a 400 inside the batch completed successfully on the synchronous /v1/responses endpoint — confirming the input was valid.)

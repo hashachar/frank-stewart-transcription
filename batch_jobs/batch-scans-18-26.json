@@ -1,0 +1,64 @@
+{
+  "job_name": "batch-scans-18-26",
+  "created_at": "2026-07-06T04:27:46.593485+00:00",
+  "config": {
+    "model": "gpt-5.5",
+    "effort": "high",
+    "use_ci": true,
+    "output_dir": "outputs/gpt-5.5_effort-high_CI-on",
+    "prompt_file": "Phase 1e - No Margins, No Apostrophe.txt"
+  },
+  "images": {
+    "FN-0018": {
+      "path": "/Users/Yair/Documents/My Documents/Frank Stewart - Bedouin Transcription/Yair's Workflow/OpenAI_API/scans/FN-0018.png",
+      "file_id": "file-3Ao16RyRgYCQ9y3naacLU8",
+      "custom_id": "req-FN-0018"
+    },
+    "FN-0019": {
+      "path": "/Users/Yair/Documents/My Documents/Frank Stewart - Bedouin Transcription/Yair's Workflow/OpenAI_API/scans/FN-0019.png",
+      "file_id": "file-83KsCCvXPkUvXXf6qRZGGv",
+      "custom_id": "req-FN-0019"
+    },
+    "FN-0021": {
+      "path": "/Users/Yair/Documents/My Documents/Frank Stewart - Bedouin Transcription/Yair's Workflow/OpenAI_API/scans/FN-0021.png",
+      "file_id": "file-4ALdtTdkNbCvGg3iKPfWqU",
+      "custom_id": "req-FN-0021"
+    },
+    "FN-0023": {
+      "path": "/Users/Yair/Documents/My Documents/Frank Stewart - Bedouin Transcription/Yair's Workflow/OpenAI_API/scans/FN-0023.png",
+      "file_id": "file-J3bz7xFQVRu6Mbs3fgCZwJ",
+      "custom_id": "req-FN-0023"
+    },
+    "FN-0024": {
+      "path": "/Users/Yair/Documents/My Documents/Frank Stewart - Bedouin Transcription/Yair's Workflow/OpenAI_API/scans/FN-0024.png",
+      "file_id": "file-RcQWJQbQu9YNQWzDfdXSqu",
+      "custom_id": "req-FN-0024"
+    },
+    "FN-0025": {
+      "path": "/Users/Yair/Documents/My Documents/Frank Stewart - Bedouin Transcription/Yair's Workflow/OpenAI_API/scans/FN-0025.png",
+      "file_id": "file-BRESMuxLrY6UmuiVsVS5dx",
+      "custom_id": "req-FN-0025"
+    },
+    "FN-0026": {
+      "path": "/Users/Yair/Documents/My Documents/Frank Stewart - Bedouin Transcription/Yair's Workflow/OpenAI_API/scans/FN-0026.png",
+      "file_id": "file-7MxrVEbERot5oK2nR3rLhc",
+      "custom_id": "req-FN-0026"
+    }
+  },
+  "jsonl_path": "/Users/Yair/Documents/My Documents/Frank Stewart - Bedouin Transcription/Yair's Workflow/OpenAI_API/batch_jobs/batch-scans-18-26.jsonl",
+  "jsonl_file_id": "file-ARUyABbWxFc55AtGerVxur",
+  "batch_id": "batch_6a4b2edbc56c819092cd1ca72f05a5e5",
+  "status": "fetched",
+  "completed_at": null,
+  "output_file_id": null,
+  "error_file_id": "file-2kxijAf6Kw17LYvyjdrCG1",
+  "needs_retry": [
+    "req-FN-0018",
+    "req-FN-0019",
+    "req-FN-0021",
+    "req-FN-0023",
+    "req-FN-0024",
+    "req-FN-0025",
+    "req-FN-0026"
+  ]
+}

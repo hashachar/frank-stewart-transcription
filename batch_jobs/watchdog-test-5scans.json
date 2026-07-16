@@ -1,0 +1,48 @@
+{
+  "job_name": "watchdog-test-5scans",
+  "created_at": "2026-07-05T16:37:48.686690+00:00",
+  "config": {
+    "model": "gpt-5.5",
+    "effort": "high",
+    "use_ci": true,
+    "output_dir": "outputs/gpt-5.5_effort-high_CI-on",
+    "prompt_file": "Phase 1e - No Margins, No Apostrophe.txt"
+  },
+  "images": {
+    "FN-0008": {
+      "path": "/Users/Yair/Documents/My Documents/Frank Stewart - Bedouin Transcription/Yair's Workflow/OpenAI_API/scans/FN-0008.png",
+      "file_id": "file-DsLZSVvPAHuFtF7Q6hdrWm",
+      "custom_id": "req-FN-0008"
+    },
+    "FN-0012": {
+      "path": "/Users/Yair/Documents/My Documents/Frank Stewart - Bedouin Transcription/Yair's Workflow/OpenAI_API/scans/FN-0012.png",
+      "file_id": "file-7JP6245VNiuAv5heb17skF",
+      "custom_id": "req-FN-0012"
+    },
+    "FN-0015": {
+      "path": "/Users/Yair/Documents/My Documents/Frank Stewart - Bedouin Transcription/Yair's Workflow/OpenAI_API/scans/FN-0015.png",
+      "file_id": "file-Y3dNHwCgQBdML4nK9dmN7q",
+      "custom_id": "req-FN-0015"
+    },
+    "FN-0016": {
+      "path": "/Users/Yair/Documents/My Documents/Frank Stewart - Bedouin Transcription/Yair's Workflow/OpenAI_API/scans/FN-0016.png",
+      "file_id": "file-UNqk157iArmuPSVtfysvf8",
+      "custom_id": "req-FN-0016"
+    },
+    "FN-0017": {
+      "path": "/Users/Yair/Documents/My Documents/Frank Stewart - Bedouin Transcription/Yair's Workflow/OpenAI_API/scans/FN-0017.png",
+      "file_id": "file-PRiPdtdg5vPRNeAHDX1N4T",
+      "custom_id": "req-FN-0017"
+    }
+  },
+  "jsonl_path": "/Users/Yair/Documents/My Documents/Frank Stewart - Bedouin Transcription/Yair's Workflow/OpenAI_API/batch_jobs/watchdog-test-5scans.jsonl",
+  "jsonl_file_id": "file-3xh3F8b87VqohBKVHDiR3f",
+  "batch_id": "batch_6a4a88b1fe808190932d7f6118aff131",
+  "status": "fetched",
+  "completed_at": null,
+  "output_file_id": "file-5aXrFPzNykdrcDAgKdkq8s",
+  "error_file_id": "file-Cmda2zVAmdKE5tYGnLfJzZ",
+  "needs_retry": [
+    "req-FN-0016"
+  ]
+}

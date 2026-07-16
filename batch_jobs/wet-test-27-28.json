@@ -1,0 +1,58 @@
+{
+  "job_name": "wet-test-27-28",
+  "created_at": "2026-07-08T00:23:51.877826+00:00",
+  "config": {
+    "model": "gpt-5.5",
+    "effort": "high",
+    "use_ci": true,
+    "batch_size": 1,
+    "output_dir": "outputs/gpt-5.5_effort-high_CI-on",
+    "prompt_file": "Phase 1e - No Margins, No Apostrophe.txt"
+  },
+  "images": {
+    "FN-0027": {
+      "path": "/Users/Yair/Documents/My Documents/Frank Stewart - Bedouin Transcription/Yair's Workflow/OpenAI_API/scans/FN-0027.png",
+      "file_id": "file-QDN5QHNSwiRyhYnDoG7ZJj",
+      "custom_id": "req-FN-0027"
+    },
+    "FN-0028": {
+      "path": "/Users/Yair/Documents/My Documents/Frank Stewart - Bedouin Transcription/Yair's Workflow/OpenAI_API/scans/FN-0028.png",
+      "file_id": "file-8kMmLyZGMY2TU6fbNE2Lp5",
+      "custom_id": "req-FN-0028"
+    }
+  },
+  "batches": [
+    {
+      "index": 0,
+      "custom_ids": [
+        "req-FN-0027"
+      ],
+      "jsonl_path": "/Users/Yair/Documents/My Documents/Frank Stewart - Bedouin Transcription/Yair's Workflow/OpenAI_API/batch_jobs/wet-test-27-28_b0000.jsonl",
+      "jsonl_file_id": "file-REL3C7Y3oHLJ86E7JSoCVT",
+      "batch_id": "batch_6a4d98d66e348190ada4a4ffe93f171e",
+      "status": "fetched",
+      "output_file_id": null,
+      "error_file_id": "file-FMqX6GjKDYvmez1LZv9jVB",
+      "completed_at": "2026-07-08T02:29:37.870647+00:00",
+      "needs_retry": [],
+      "previous_batches": []
+    },
+    {
+      "index": 1,
+      "custom_ids": [
+        "req-FN-0028"
+      ],
+      "jsonl_path": "/Users/Yair/Documents/My Documents/Frank Stewart - Bedouin Transcription/Yair's Workflow/OpenAI_API/batch_jobs/wet-test-27-28_b0001.jsonl",
+      "jsonl_file_id": "file-NiMZs4V2bpMQ6CyyvFgVyE",
+      "batch_id": "batch_6a4d98d7efc48190ae20f35683f6eee0",
+      "status": "fetched",
+      "output_file_id": null,
+      "error_file_id": "file-69GCqoker8gKRTrhsbRhx6",
+      "completed_at": "2026-07-08T02:29:37.870687+00:00",
+      "needs_retry": [],
+      "previous_batches": []
+    }
+  ],
+  "status": "fetched",
+  "needs_retry": []
+}

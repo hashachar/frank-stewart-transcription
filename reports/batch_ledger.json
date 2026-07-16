@@ -1,0 +1,2138 @@
+{
+  "batches": {
+    "batch_6a4ab9e08a74819093e4e2b35f2e508f": {
+      "batch_id": "batch_6a4ab9e08a74819093e4e2b35f2e508f",
+      "job": "watchdog-finish-2scans",
+      "created": 1783282144,
+      "finished": 1783289353,
+      "status": "cancelled",
+      "model": "gpt-5.5",
+      "effort": "high",
+      "ci": true,
+      "submitted": 2,
+      "completed": 0,
+      "failed": 1,
+      "execs": 3,
+      "in": 169799,
+      "out": 73628,
+      "billed": 1.5289,
+      "billed_source": "frozen",
+      "completed_cost": 0,
+      "scans": {
+        "FN-0015": {
+          "status": "failed",
+          "reason": "There was an issue with your request. Please check your inputs and try again",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-0016": {
+          "status": "failed",
+          "reason": "This request was not executed because the batch was cancelled.",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        }
+      },
+      "frozen": true
+    },
+    "batch_6a4a88b1fe808190932d7f6118aff131": {
+      "batch_id": "batch_6a4a88b1fe808190932d7f6118aff131",
+      "job": "watchdog-test-5scans",
+      "created": 1783269553,
+      "finished": 1783278113,
+      "status": "cancelled",
+      "model": "gpt-5.5",
+      "effort": "high",
+      "ci": true,
+      "submitted": 5,
+      "completed": 3,
+      "failed": 0,
+      "execs": 8,
+      "in": 442875,
+      "out": 217752,
+      "billed": 4.3735,
+      "billed_source": "seed",
+      "completed_cost": 0.9416,
+      "scans": {
+        "FN-0008": {
+          "status": "completed",
+          "reason": "",
+          "in": 29219,
+          "out": 14090,
+          "cost": 0.2844
+        },
+        "FN-0012": {
+          "status": "completed",
+          "reason": "",
+          "in": 40688,
+          "out": 19453,
+          "cost": 0.3935
+        },
+        "FN-0017": {
+          "status": "completed",
+          "reason": "",
+          "in": 30004,
+          "out": 12581,
+          "cost": 0.2637
+        },
+        "FN-0015": {
+          "status": "failed",
+          "reason": "unknown error",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-0016": {
+          "status": "failed",
+          "reason": "This request was not executed because the batch was cancelled.",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        }
+      },
+      "frozen": true
+    },
+    "batch_6a48a41f79348190a4b9921d50adad51": {
+      "batch_id": "batch_6a48a41f79348190a4b9921d50adad51",
+      "job": "phase1e-6scans-0704",
+      "created": 1783145503,
+      "finished": 1783170604,
+      "status": "cancelled",
+      "model": "gpt-5.5",
+      "effort": "high",
+      "ci": true,
+      "submitted": 6,
+      "completed": 2,
+      "failed": 3,
+      "execs": 27,
+      "in": 1454322,
+      "out": 671733,
+      "billed": 13.7118,
+      "billed_source": "seed",
+      "completed_cost": 0.5886,
+      "scans": {
+        "FN-0009": {
+          "status": "completed",
+          "reason": "",
+          "in": 30190,
+          "out": 15214,
+          "cost": 0.3037
+        },
+        "FN-0013": {
+          "status": "completed",
+          "reason": "",
+          "in": 28628,
+          "out": 14220,
+          "cost": 0.2849
+        },
+        "FN-0006": {
+          "status": "failed",
+          "reason": "There was an issue with your request. Please check your inputs and try again",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-0008": {
+          "status": "failed",
+          "reason": "Our servers are currently overloaded. Please try again later.",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-0012": {
+          "status": "failed",
+          "reason": "There was an issue with your request. Please check your inputs and try again",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-0015": {
+          "status": "failed",
+          "reason": "There was an issue with your request. Please check your inputs and try again",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        }
+      },
+      "frozen": true
+    },
+    "batch_6a4858b31da081909c6abab3c42a7e74": {
+      "batch_id": "batch_6a4858b31da081909c6abab3c42a7e74",
+      "job": "phase1e-0006-0025",
+      "created": 1783126195,
+      "finished": 1783138149,
+      "status": "completed",
+      "model": "gpt-5.5",
+      "effort": "high",
+      "ci": true,
+      "submitted": 17,
+      "completed": 3,
+      "failed": 14,
+      "execs": 37,
+      "in": 2082425,
+      "out": 876053,
+      "billed": 18.3469,
+      "billed_source": "seed",
+      "completed_cost": 0.8093,
+      "scans": {
+        "FN-0014": {
+          "status": "completed",
+          "reason": "",
+          "in": 26758,
+          "out": 14793,
+          "cost": 0.2888
+        },
+        "FN-0010": {
+          "status": "completed",
+          "reason": "",
+          "in": 29277,
+          "out": 12279,
+          "cost": 0.2574
+        },
+        "FN-0022": {
+          "status": "completed",
+          "reason": "",
+          "in": 27545,
+          "out": 12952,
+          "cost": 0.2631
+        },
+        "FN-0009": {
+          "status": "failed",
+          "reason": "You exceeded your current quota, please check your plan and billing details. For more info",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-0021": {
+          "status": "failed",
+          "reason": "You exceeded your current quota, please check your plan and billing details. For more info",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-0013": {
+          "status": "failed",
+          "reason": "You exceeded your current quota, please check your plan and billing details. For more info",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-0015": {
+          "status": "failed",
+          "reason": "You exceeded your current quota, please check your plan and billing details. For more info",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-0016": {
+          "status": "failed",
+          "reason": "There was an issue with your request. Please check your inputs and try again",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-0012": {
+          "status": "failed",
+          "reason": "You exceeded your current quota, please check your plan and billing details. For more info",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-0023": {
+          "status": "failed",
+          "reason": "You exceeded your current quota, please check your plan and billing details. For more info",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-0008": {
+          "status": "failed",
+          "reason": "You exceeded your current quota, please check your plan and billing details. For more info",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-0018": {
+          "status": "failed",
+          "reason": "There was an issue with your request. Please check your inputs and try again",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-0019": {
+          "status": "failed",
+          "reason": "You exceeded your current quota, please check your plan and billing details. For more info",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-0024": {
+          "status": "failed",
+          "reason": "You exceeded your current quota, please check your plan and billing details. For more info",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-0017": {
+          "status": "failed",
+          "reason": "You exceeded your current quota, please check your plan and billing details. For more info",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-0006": {
+          "status": "failed",
+          "reason": "You exceeded your current quota, please check your plan and billing details. For more info",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-0025": {
+          "status": "failed",
+          "reason": "You exceeded your current quota, please check your plan and billing details. For more info",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        }
+      },
+      "frozen": true
+    },
+    "batch_6a482b22b14481909cb74e9a61327845": {
+      "batch_id": "batch_6a482b22b14481909cb74e9a61327845",
+      "job": "phase1e-0006-0025",
+      "created": 1783114530,
+      "finished": 1783122197,
+      "status": "completed",
+      "model": "gpt-5.5",
+      "effort": "high",
+      "ci": true,
+      "submitted": 20,
+      "completed": 3,
+      "failed": 17,
+      "execs": 25,
+      "in": 1273853,
+      "out": 588591,
+      "billed": 12.0135,
+      "billed_source": "seed",
+      "completed_cost": 0.9811,
+      "scans": {
+        "FN-0007": {
+          "status": "completed",
+          "reason": "",
+          "in": 38664,
+          "out": 21527,
+          "cost": 0.4196
+        },
+        "FN-0011": {
+          "status": "completed",
+          "reason": "",
+          "in": 22626,
+          "out": 10356,
+          "cost": 0.2119
+        },
+        "FN-0020": {
+          "status": "completed",
+          "reason": "",
+          "in": 32539,
+          "out": 17882,
+          "cost": 0.3496
+        },
+        "FN-0006": {
+          "status": "failed",
+          "reason": "You exceeded your current quota, please check your plan and billing details. For more info",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-0008": {
+          "status": "failed",
+          "reason": "You exceeded your current quota, please check your plan and billing details. For more info",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-0009": {
+          "status": "failed",
+          "reason": "You exceeded your current quota, please check your plan and billing details. For more info",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-0010": {
+          "status": "failed",
+          "reason": "You exceeded your current quota, please check your plan and billing details. For more info",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-0012": {
+          "status": "failed",
+          "reason": "You exceeded your current quota, please check your plan and billing details. For more info",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-0013": {
+          "status": "failed",
+          "reason": "You exceeded your current quota, please check your plan and billing details. For more info",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-0014": {
+          "status": "failed",
+          "reason": "You exceeded your current quota, please check your plan and billing details. For more info",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-0015": {
+          "status": "failed",
+          "reason": "You exceeded your current quota, please check your plan and billing details. For more info",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-0016": {
+          "status": "failed",
+          "reason": "You exceeded your current quota, please check your plan and billing details. For more info",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-0017": {
+          "status": "failed",
+          "reason": "You exceeded your current quota, please check your plan and billing details. For more info",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-0018": {
+          "status": "failed",
+          "reason": "You exceeded your current quota, please check your plan and billing details. For more info",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-0019": {
+          "status": "failed",
+          "reason": "You exceeded your current quota, please check your plan and billing details. For more info",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-0021": {
+          "status": "failed",
+          "reason": "You exceeded your current quota, please check your plan and billing details. For more info",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-0022": {
+          "status": "failed",
+          "reason": "You exceeded your current quota, please check your plan and billing details. For more info",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-0023": {
+          "status": "failed",
+          "reason": "You exceeded your current quota, please check your plan and billing details. For more info",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-0024": {
+          "status": "failed",
+          "reason": "You exceeded your current quota, please check your plan and billing details. For more info",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-0025": {
+          "status": "failed",
+          "reason": "You exceeded your current quota, please check your plan and billing details. For more info",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        }
+      },
+      "frozen": true
+    },
+    "batch_6a45f30280c08190a9e293ce45ee865d": {
+      "batch_id": "batch_6a45f30280c08190a9e293ce45ee865d",
+      "job": "batch-test-3scans-high",
+      "created": 1782969090,
+      "finished": 1783016416,
+      "status": "cancelled",
+      "model": "gpt-5.5",
+      "effort": "high",
+      "ci": true,
+      "submitted": 3,
+      "completed": 0,
+      "failed": 0,
+      "execs": 0,
+      "in": 0,
+      "out": 0,
+      "billed": 0.0,
+      "billed_source": "seed",
+      "completed_cost": 0,
+      "scans": {
+        "FN-6-001-050-3": {
+          "status": "failed",
+          "reason": "This request was not executed because the batch was cancelled.",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-6-001-050-4": {
+          "status": "failed",
+          "reason": "This request was not executed because the batch was cancelled.",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-6-001-050-5": {
+          "status": "failed",
+          "reason": "This request was not executed because the batch was cancelled.",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        }
+      },
+      "frozen": true
+    },
+    "batch_6a45f2ff21d4819085964983b5d5c697": {
+      "batch_id": "batch_6a45f2ff21d4819085964983b5d5c697",
+      "job": "batch-test-3scans",
+      "created": 1782969087,
+      "finished": 1783057054,
+      "status": "expired",
+      "model": "gpt-5.5",
+      "effort": "medium",
+      "ci": true,
+      "submitted": 3,
+      "completed": 0,
+      "failed": 0,
+      "execs": 0,
+      "in": 0,
+      "out": 0,
+      "billed": 0.0,
+      "billed_source": "seed",
+      "completed_cost": 0,
+      "scans": {
+        "FN-6-001-050-3": {
+          "status": "failed",
+          "reason": "Our servers are currently overloaded. Please try again later.",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-6-001-050-4": {
+          "status": "failed",
+          "reason": "Our servers are currently overloaded. Please try again later.",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-6-001-050-5": {
+          "status": "failed",
+          "reason": "Our servers are currently overloaded. Please try again later.",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        }
+      },
+      "frozen": true
+    },
+    "batch_6a45658b3d188190952a6b6b9680c68f": {
+      "batch_id": "batch_6a45658b3d188190952a6b6b9680c68f",
+      "job": "",
+      "created": 1782932875,
+      "finished": 1782970289,
+      "status": "cancelled",
+      "model": "gpt-5.5",
+      "effort": null,
+      "ci": null,
+      "submitted": 3,
+      "completed": 0,
+      "failed": 0,
+      "execs": 0,
+      "in": 0,
+      "out": 0,
+      "billed": 0.0,
+      "billed_source": "seed",
+      "completed_cost": 0,
+      "scans": {
+        "FN-6-001-050-3": {
+          "status": "failed",
+          "reason": "Our servers are currently overloaded. Please try again later.",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-6-001-050-4": {
+          "status": "failed",
+          "reason": "Our servers are currently overloaded. Please try again later.",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-6-001-050-5": {
+          "status": "failed",
+          "reason": "Our servers are currently overloaded. Please try again later.",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        }
+      },
+      "frozen": true
+    },
+    "batch_6a455ac38db08190b3c8ed7310654098": {
+      "batch_id": "batch_6a455ac38db08190b3c8ed7310654098",
+      "job": "",
+      "created": 1782930115,
+      "finished": 1782970280,
+      "status": "cancelled",
+      "model": "gpt-5.5",
+      "effort": null,
+      "ci": null,
+      "submitted": 3,
+      "completed": 0,
+      "failed": 0,
+      "execs": 0,
+      "in": 0,
+      "out": 0,
+      "billed": 0.0,
+      "billed_source": "seed",
+      "completed_cost": 0,
+      "scans": {
+        "FN-6-001-050-3": {
+          "status": "failed",
+          "reason": "Our servers are currently overloaded. Please try again later.",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-6-001-050-4": {
+          "status": "failed",
+          "reason": "This request was not executed because the batch was cancelled.",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-6-001-050-5": {
+          "status": "failed",
+          "reason": "Our servers are currently overloaded. Please try again later.",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        }
+      },
+      "frozen": true
+    },
+    "batch_6a4549480b908190a5310197baa7bb34": {
+      "batch_id": "batch_6a4549480b908190a5310197baa7bb34",
+      "job": "",
+      "created": 1782925640,
+      "finished": 1782932561,
+      "status": "completed",
+      "model": "gpt-5.5",
+      "effort": null,
+      "ci": null,
+      "submitted": 3,
+      "completed": 0,
+      "failed": 3,
+      "execs": 0,
+      "in": 0,
+      "out": 0,
+      "billed": 0.0,
+      "billed_source": "seed",
+      "completed_cost": 0,
+      "scans": {
+        "FN-6-001-050-3": {
+          "status": "failed",
+          "reason": "Our servers are currently overloaded. Please try again later.",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-6-001-050-4": {
+          "status": "failed",
+          "reason": "An error occurred while processing your request. You can retry your request, or contact us",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-6-001-050-5": {
+          "status": "failed",
+          "reason": "An error occurred while processing your request. You can retry your request, or contact us",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        }
+      },
+      "frozen": true
+    },
+    "batch_6a4b2edbc56c819092cd1ca72f05a5e5": {
+      "batch_id": "batch_6a4b2edbc56c819092cd1ca72f05a5e5",
+      "job": "batch-scans-18-26",
+      "created": 1783312091,
+      "finished": 1783317922,
+      "status": "cancelled",
+      "model": "gpt-5.5",
+      "effort": "high",
+      "ci": true,
+      "submitted": 7,
+      "completed": 0,
+      "failed": 2,
+      "execs": 9,
+      "in": 478626,
+      "out": 216648,
+      "billed": 4.4463,
+      "billed_source": "frozen",
+      "completed_cost": 0,
+      "scans": {
+        "FN-0018": {
+          "status": "failed",
+          "reason": "There was an issue with your request. Please check your inputs and try again",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-0019": {
+          "status": "failed",
+          "reason": "This request was not executed because the batch was cancelled.",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-0021": {
+          "status": "failed",
+          "reason": "The server had an error processing your request. Sorry about that! You can retry your requ",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-0023": {
+          "status": "failed",
+          "reason": "There was an issue with your request. Please check your inputs and try again",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-0024": {
+          "status": "failed",
+          "reason": "This request was not executed because the batch was cancelled.",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-0025": {
+          "status": "failed",
+          "reason": "This request was not executed because the batch was cancelled.",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        },
+        "FN-0026": {
+          "status": "failed",
+          "reason": "This request was not executed because the batch was cancelled.",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        }
+      },
+      "frozen": true
+    },
+    "batch_6a4c6094c90c8190a9f9eb30b08a3afa": {
+      "batch_id": "batch_6a4c6094c90c8190a9f9eb30b08a3afa",
+      "job": "rerun-fn0010",
+      "created": 1783390356,
+      "finished": 1783394076,
+      "status": "completed",
+      "model": "gpt-5.5",
+      "effort": "high",
+      "ci": true,
+      "submitted": 1,
+      "completed": 1,
+      "failed": 0,
+      "execs": 0,
+      "in": 0,
+      "out": 20489,
+      "billed": 0.3073,
+      "billed_source": "frozen",
+      "completed_cost": 0.3591,
+      "scans": {
+        "FN-0010": {
+          "status": "completed",
+          "reason": "",
+          "in": 37893,
+          "out": 17627,
+          "cost": 0.3591
+        }
+      },
+      "frozen": true
+    },
+    "batch_6a4d98d66e348190ada4a4ffe93f171e": {
+      "batch_id": "batch_6a4d98d66e348190ada4a4ffe93f171e",
+      "job": "",
+      "created": 1783470294,
+      "finished": 1783477772,
+      "status": "completed",
+      "model": "gpt-5.5",
+      "effort": null,
+      "ci": null,
+      "submitted": 1,
+      "completed": 0,
+      "failed": 1,
+      "execs": 0,
+      "in": 0,
+      "out": 0,
+      "billed": 0.0,
+      "billed_source": "unavailable",
+      "completed_cost": 0,
+      "scans": {
+        "FN-0027": {
+          "status": "failed",
+          "reason": "unknown error",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        }
+      },
+      "frozen": false
+    },
+    "batch_6a4d98d7efc48190ae20f35683f6eee0": {
+      "batch_id": "batch_6a4d98d7efc48190ae20f35683f6eee0",
+      "job": "",
+      "created": 1783470295,
+      "finished": 1783477588,
+      "status": "completed",
+      "model": "gpt-5.5",
+      "effort": null,
+      "ci": null,
+      "submitted": 1,
+      "completed": 0,
+      "failed": 1,
+      "execs": 0,
+      "in": 0,
+      "out": 0,
+      "billed": 0.0,
+      "billed_source": "unavailable",
+      "completed_cost": 0,
+      "scans": {
+        "FN-0028": {
+          "status": "failed",
+          "reason": "unknown error",
+          "in": 0,
+          "out": 0,
+          "cost": 0.0
+        }
+      },
+      "frozen": false
+    }
+  },
+  "sync": [
+    {
+      "stem": "FN-0001",
+      "when": "20260715_134326",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.6-sol",
+      "tier": "flex",
+      "in": 33623,
+      "out": 14153,
+      "cost": 0.2964,
+      "file": "FN-0001_20260715_134326_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0001",
+      "when": "20260715_232504",
+      "effort": "xhigh",
+      "ci": "on",
+      "model": "gpt-5.6-sol",
+      "tier": "flex",
+      "in": 80167,
+      "out": 28624,
+      "cost": 0.6298,
+      "file": "FN-0001_20260715_232504_xhigh_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0002",
+      "when": "20260715_142807",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.6-sol",
+      "tier": "flex",
+      "in": 51118,
+      "out": 15678,
+      "cost": 0.363,
+      "file": "FN-0002_20260715_142807_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0002",
+      "when": "20260715_235053",
+      "effort": "xhigh",
+      "ci": "on",
+      "model": "gpt-5.6-sol",
+      "tier": "flex",
+      "in": 139407,
+      "out": 30251,
+      "cost": 0.8023,
+      "file": "FN-0002_20260715_235053_xhigh_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0003",
+      "when": "20260715_143526",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.6-sol",
+      "tier": "flex",
+      "in": 61114,
+      "out": 18442,
+      "cost": 0.4294,
+      "file": "FN-0003_20260715_143526_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0003",
+      "when": "20260716_000457",
+      "effort": "xhigh",
+      "ci": "on",
+      "model": "gpt-5.6-sol",
+      "tier": "flex",
+      "in": 76844,
+      "out": 22249,
+      "cost": 0.5258,
+      "file": "FN-0003_20260716_000457_xhigh_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0004",
+      "when": "20260715_144328",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.6-sol",
+      "tier": "flex",
+      "in": 47440,
+      "out": 17309,
+      "cost": 0.3782,
+      "file": "FN-0004_20260715_144328_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0004",
+      "when": "20260716_003600",
+      "effort": "xhigh",
+      "ci": "on",
+      "model": "gpt-5.6-sol",
+      "tier": "flex",
+      "in": 126986,
+      "out": 30089,
+      "cost": 0.7688,
+      "file": "FN-0004_20260716_003600_xhigh_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0005",
+      "when": "20260715_144858",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.6-sol",
+      "tier": "flex",
+      "in": 55247,
+      "out": 16431,
+      "cost": 0.3846,
+      "file": "FN-0005_20260715_144858_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0005",
+      "when": "20260716_005350",
+      "effort": "xhigh",
+      "ci": "on",
+      "model": "gpt-5.6-sol",
+      "tier": "flex",
+      "in": 98220,
+      "out": 24396,
+      "cost": 0.6115,
+      "file": "FN-0005_20260716_005350_xhigh_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0006",
+      "when": "20260704_074500",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 39807,
+      "out": 19851,
+      "cost": 0.7946,
+      "file": "FN-0006_20260704_074500_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0006",
+      "when": "20260715_145425",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.6-sol",
+      "tier": "flex",
+      "in": 36554,
+      "out": 14553,
+      "cost": 0.3097,
+      "file": "FN-0006_20260715_145425_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0006",
+      "when": "20260716_010833",
+      "effort": "xhigh",
+      "ci": "on",
+      "model": "gpt-5.6-sol",
+      "tier": "flex",
+      "in": 65603,
+      "out": 22656,
+      "cost": 0.5038,
+      "file": "FN-0006_20260716_010833_xhigh_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0007",
+      "when": "20260715_150132",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.6-sol",
+      "tier": "flex",
+      "in": 57357,
+      "out": 13280,
+      "cost": 0.3426,
+      "file": "FN-0007_20260715_150132_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0007",
+      "when": "20260716_012122",
+      "effort": "xhigh",
+      "ci": "on",
+      "model": "gpt-5.6-sol",
+      "tier": "flex",
+      "in": 69127,
+      "out": 22957,
+      "cost": 0.5172,
+      "file": "FN-0007_20260716_012122_xhigh_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0008",
+      "when": "20260715_150855",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.6-sol",
+      "tier": "flex",
+      "in": 71799,
+      "out": 18221,
+      "cost": 0.4528,
+      "file": "FN-0008_20260715_150855_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0008",
+      "when": "20260716_013938",
+      "effort": "xhigh",
+      "ci": "on",
+      "model": "gpt-5.6-sol",
+      "tier": "flex",
+      "in": 71130,
+      "out": 26550,
+      "cost": 0.5761,
+      "file": "FN-0008_20260716_013938_xhigh_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0009",
+      "when": "20260715_151952",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.6-sol",
+      "tier": "flex",
+      "in": 99147,
+      "out": 19574,
+      "cost": 0.5415,
+      "file": "FN-0009_20260715_151952_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0009",
+      "when": "20260716_015816",
+      "effort": "xhigh",
+      "ci": "on",
+      "model": "gpt-5.6-sol",
+      "tier": "flex",
+      "in": 97200,
+      "out": 35076,
+      "cost": 0.7691,
+      "file": "FN-0009_20260716_015816_xhigh_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0010",
+      "when": "20260715_152409",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.6-sol",
+      "tier": "flex",
+      "in": 38150,
+      "out": 12881,
+      "cost": 0.2886,
+      "file": "FN-0010_20260715_152409_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0010",
+      "when": "20260716_021214",
+      "effort": "xhigh",
+      "ci": "on",
+      "model": "gpt-5.6-sol",
+      "tier": "flex",
+      "in": 67393,
+      "out": 25141,
+      "cost": 0.5456,
+      "file": "FN-0010_20260716_021214_xhigh_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0011",
+      "when": "20260715_152814",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.6-sol",
+      "tier": "flex",
+      "in": 41677,
+      "out": 9135,
+      "cost": 0.2412,
+      "file": "FN-0011_20260715_152814_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0012",
+      "when": "20260715_153912",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.6-sol",
+      "tier": "flex",
+      "in": 51177,
+      "out": 15097,
+      "cost": 0.3544,
+      "file": "FN-0012_20260715_153912_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0013",
+      "when": "20260715_154849",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.6-sol",
+      "tier": "flex",
+      "in": 110685,
+      "out": 15635,
+      "cost": 0.5112,
+      "file": "FN-0013_20260715_154849_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0014",
+      "when": "20260715_155842",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.6-sol",
+      "tier": "flex",
+      "in": 78870,
+      "out": 17408,
+      "cost": 0.4583,
+      "file": "FN-0014_20260715_155842_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0015",
+      "when": "20260705_203319",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 43639,
+      "out": 19930,
+      "cost": 0.8161,
+      "file": "FN-0015_20260705_203319_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0015",
+      "when": "20260715_160951",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.6-sol",
+      "tier": "flex",
+      "in": 73993,
+      "out": 16133,
+      "cost": 0.427,
+      "file": "FN-0015_20260715_160951_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0016",
+      "when": "20260705_204913",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 66475,
+      "out": 26515,
+      "cost": 1.1278,
+      "file": "FN-0016_20260705_204913_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0016",
+      "when": "20260715_173953",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.6-sol",
+      "tier": "flex",
+      "in": 46740,
+      "out": 13999,
+      "cost": 0.3268,
+      "file": "FN-0016_20260715_173953_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0017",
+      "when": "20260715_162105",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.6-sol",
+      "tier": "flex",
+      "in": 46608,
+      "out": 14631,
+      "cost": 0.336,
+      "file": "FN-0017_20260715_162105_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0018",
+      "when": "20260706_144657",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 61033,
+      "out": 24747,
+      "cost": 1.0476,
+      "file": "FN-0018_20260706_144657_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0018",
+      "when": "20260715_162847",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.6-sol",
+      "tier": "flex",
+      "in": 81133,
+      "out": 12862,
+      "cost": 0.3958,
+      "file": "FN-0018_20260715_162847_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0019",
+      "when": "20260706_004418",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 54742,
+      "out": 24337,
+      "cost": 1.0038,
+      "file": "FN-0019_20260706_004418_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0019",
+      "when": "20260715_163506",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.6-sol",
+      "tier": "flex",
+      "in": 44179,
+      "out": 11934,
+      "cost": 0.2895,
+      "file": "FN-0019_20260715_163506_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0020",
+      "when": "20260715_164357",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.6-sol",
+      "tier": "flex",
+      "in": 65247,
+      "out": 19842,
+      "cost": 0.4607,
+      "file": "FN-0020_20260715_164357_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0021",
+      "when": "20260706_005743",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 60545,
+      "out": 28170,
+      "cost": 1.1478,
+      "file": "FN-0021_20260706_005743_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0021",
+      "when": "20260715_165108",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.6-sol",
+      "tier": "flex",
+      "in": 44998,
+      "out": 14592,
+      "cost": 0.3314,
+      "file": "FN-0021_20260715_165108_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0022",
+      "when": "20260715_165757",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.6-sol",
+      "tier": "flex",
+      "in": 44332,
+      "out": 12376,
+      "cost": 0.2965,
+      "file": "FN-0022_20260715_165757_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0023",
+      "when": "20260706_010644",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 42433,
+      "out": 19882,
+      "cost": 0.8086,
+      "file": "FN-0023_20260706_010644_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0023",
+      "when": "20260715_171023",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.6-sol",
+      "tier": "flex",
+      "in": 102221,
+      "out": 16524,
+      "cost": 0.5034,
+      "file": "FN-0023_20260715_171023_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0024",
+      "when": "20260706_011731",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 56549,
+      "out": 27417,
+      "cost": 1.1053,
+      "file": "FN-0024_20260706_011731_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0024",
+      "when": "20260715_171806",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.6-sol",
+      "tier": "flex",
+      "in": 52189,
+      "out": 16863,
+      "cost": 0.3834,
+      "file": "FN-0024_20260715_171806_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0025",
+      "when": "20260706_012928",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 63634,
+      "out": 23635,
+      "cost": 1.0272,
+      "file": "FN-0025_20260706_012928_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0025",
+      "when": "20260715_172417",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.6-sol",
+      "tier": "flex",
+      "in": 59216,
+      "out": 16094,
+      "cost": 0.3895,
+      "file": "FN-0025_20260715_172417_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0026",
+      "when": "20260706_014201",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 61637,
+      "out": 28130,
+      "cost": 1.1521,
+      "file": "FN-0026_20260706_014201_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0026",
+      "when": "20260715_173200",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.6-sol",
+      "tier": "flex",
+      "in": 65497,
+      "out": 18722,
+      "cost": 0.4446,
+      "file": "FN-0026_20260715_173200_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0027",
+      "when": "20260709_201341",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "flex",
+      "in": 44178,
+      "out": 23229,
+      "cost": 0.4589,
+      "file": "FN-0027_20260709_201341_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0028",
+      "when": "20260709_202624",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "flex",
+      "in": 73740,
+      "out": 19983,
+      "cost": 0.4841,
+      "file": "FN-0028_20260709_202624_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-0029",
+      "when": "20260709_202436",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "flex",
+      "in": 45306,
+      "out": 19708,
+      "cost": 0.4089,
+      "file": "FN-0029_20260709_202436_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-1",
+      "when": "20260701_015206",
+      "effort": "medium",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 26471,
+      "out": 12665,
+      "cost": 0.5123,
+      "file": "FN-6-001-050-1_20260701_015206_medium_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-1",
+      "when": "20260701_015719",
+      "effort": "high",
+      "ci": "off",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 4002,
+      "out": 15878,
+      "cost": 0.4963,
+      "file": "FN-6-001-050-1_20260701_015719_high_CI-off_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-1",
+      "when": "20260701_020110",
+      "effort": "medium",
+      "ci": "off",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 4002,
+      "out": 10203,
+      "cost": 0.3261,
+      "file": "FN-6-001-050-1_20260701_020110_medium_CI-off_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-1",
+      "when": "20260701_072710",
+      "effort": "medium",
+      "ci": "on",
+      "model": "gpt-5.4",
+      "tier": "default",
+      "in": 74014,
+      "out": 16924,
+      "cost": 0.4389,
+      "file": "FN-6-001-050-1_20260701_072710_medium_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-1",
+      "when": "20260701_080013",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.4",
+      "tier": "default",
+      "in": 81412,
+      "out": 30313,
+      "cost": 0.6582,
+      "file": "FN-6-001-050-1_20260701_080013_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-1",
+      "when": "20260701_103044",
+      "effort": "low",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 7418,
+      "out": 2281,
+      "cost": 0.1055,
+      "file": "FN-6-001-050-1_20260701_103044_low_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-1",
+      "when": "20260702_085016",
+      "effort": "medium",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 23206,
+      "out": 8766,
+      "cost": 0.379,
+      "file": "FN-6-001-050-1_20260702_085016_medium_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-1",
+      "when": "20260702_093457",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 89446,
+      "out": 21262,
+      "cost": 1.0851,
+      "file": "FN-6-001-050-1_20260702_093457_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-1",
+      "when": "20260702_113538",
+      "effort": "medium",
+      "ci": "on",
+      "model": "gpt-5.4",
+      "tier": "default",
+      "in": 11354,
+      "out": 9535,
+      "cost": 0.1714,
+      "file": "FN-6-001-050-1_20260702_113538_medium_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-1",
+      "when": "20260702_115216",
+      "effort": "medium",
+      "ci": "on",
+      "model": "gpt-5.4",
+      "tier": "default",
+      "in": 16630,
+      "out": 12975,
+      "cost": 0.2362,
+      "file": "FN-6-001-050-1_20260702_115216_medium_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-1",
+      "when": "20260702_121001",
+      "effort": "medium",
+      "ci": "on",
+      "model": "gpt-5.4",
+      "tier": "default",
+      "in": 30092,
+      "out": 13718,
+      "cost": 0.281,
+      "file": "FN-6-001-050-1_20260702_121001_medium_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-1",
+      "when": "20260702_222049",
+      "effort": "medium",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 19231,
+      "out": 9692,
+      "cost": 0.3869,
+      "file": "FN-6-001-050-1_20260702_222049_medium_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-1",
+      "when": "20260702_222240",
+      "effort": "medium",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 25778,
+      "out": 15579,
+      "cost": 0.5963,
+      "file": "FN-6-001-050-1_20260702_222240_medium_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-1",
+      "when": "20260702_222809",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 55896,
+      "out": 30538,
+      "cost": 1.1956,
+      "file": "FN-6-001-050-1_20260702_222809_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-1",
+      "when": "20260702_222941",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 58389,
+      "out": 30350,
+      "cost": 1.2024,
+      "file": "FN-6-001-050-1_20260702_222941_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-2",
+      "when": "20260701_031549",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 64560,
+      "out": 28609,
+      "cost": 1.1811,
+      "file": "FN-6-001-050-2_20260701_031549_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-2",
+      "when": "20260701_032622",
+      "effort": "medium",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 30182,
+      "out": 12287,
+      "cost": 0.5195,
+      "file": "FN-6-001-050-2_20260701_032622_medium_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-2",
+      "when": "20260701_033521",
+      "effort": "high",
+      "ci": "off",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 4079,
+      "out": 26071,
+      "cost": 0.8025,
+      "file": "FN-6-001-050-2_20260701_033521_high_CI-off_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-2",
+      "when": "20260701_033908",
+      "effort": "medium",
+      "ci": "off",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 4079,
+      "out": 9914,
+      "cost": 0.3178,
+      "file": "FN-6-001-050-2_20260701_033908_medium_CI-off_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-2",
+      "when": "20260701_073950",
+      "effort": "medium",
+      "ci": "on",
+      "model": "gpt-5.4",
+      "tier": "default",
+      "in": 50786,
+      "out": 17831,
+      "cost": 0.3944,
+      "file": "FN-6-001-050-2_20260701_073950_medium_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-2",
+      "when": "20260701_082050",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.4",
+      "tier": "default",
+      "in": 75273,
+      "out": 34728,
+      "cost": 0.7091,
+      "file": "FN-6-001-050-2_20260701_082050_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-2",
+      "when": "20260701_103145",
+      "effort": "low",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 5336,
+      "out": 1218,
+      "cost": 0.0632,
+      "file": "FN-6-001-050-2_20260701_103145_low_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-2",
+      "when": "20260702_090330",
+      "effort": "medium",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 35842,
+      "out": 11151,
+      "cost": 0.5137,
+      "file": "FN-6-001-050-2_20260702_090330_medium_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-2",
+      "when": "20260702_095451",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 60026,
+      "out": 30685,
+      "cost": 1.2207,
+      "file": "FN-6-001-050-2_20260702_095451_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-2",
+      "when": "20260702_113822",
+      "effort": "medium",
+      "ci": "on",
+      "model": "gpt-5.4",
+      "tier": "default",
+      "in": 12073,
+      "out": 10147,
+      "cost": 0.1824,
+      "file": "FN-6-001-050-2_20260702_113822_medium_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-2",
+      "when": "20260702_115532",
+      "effort": "medium",
+      "ci": "on",
+      "model": "gpt-5.4",
+      "tier": "default",
+      "in": 15611,
+      "out": 10591,
+      "cost": 0.1979,
+      "file": "FN-6-001-050-2_20260702_115532_medium_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-2",
+      "when": "20260702_121704",
+      "effort": "medium",
+      "ci": "on",
+      "model": "gpt-5.4",
+      "tier": "default",
+      "in": 29714,
+      "out": 13385,
+      "cost": 0.2751,
+      "file": "FN-6-001-050-2_20260702_121704_medium_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-2",
+      "when": "20260702_205253",
+      "effort": "xhigh",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 106279,
+      "out": 49191,
+      "cost": 2.0071,
+      "file": "FN-6-001-050-2_20260702_205253_xhigh_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-2",
+      "when": "20260702_222631",
+      "effort": "medium",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 27216,
+      "out": 11111,
+      "cost": 0.4694,
+      "file": "FN-6-001-050-2_20260702_222631_medium_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-2",
+      "when": "20260702_223001",
+      "effort": "medium",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 32300,
+      "out": 13230,
+      "cost": 0.5584,
+      "file": "FN-6-001-050-2_20260702_223001_medium_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-2",
+      "when": "20260702_224455",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 60777,
+      "out": 33773,
+      "cost": 1.3171,
+      "file": "FN-6-001-050-2_20260702_224455_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-2",
+      "when": "20260702_224710",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 63031,
+      "out": 32475,
+      "cost": 1.2894,
+      "file": "FN-6-001-050-2_20260702_224710_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-3",
+      "when": "20260702_090927",
+      "effort": "medium",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 27956,
+      "out": 13653,
+      "cost": 0.5494,
+      "file": "FN-6-001-050-3_20260702_090927_medium_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-3",
+      "when": "20260702_100659",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 46405,
+      "out": 24403,
+      "cost": 0.9641,
+      "file": "FN-6-001-050-3_20260702_100659_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-3",
+      "when": "20260702_114056",
+      "effort": "medium",
+      "ci": "on",
+      "model": "gpt-5.4",
+      "tier": "default",
+      "in": 13175,
+      "out": 12619,
+      "cost": 0.2222,
+      "file": "FN-6-001-050-3_20260702_114056_medium_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-3",
+      "when": "20260702_115812",
+      "effort": "medium",
+      "ci": "on",
+      "model": "gpt-5.4",
+      "tier": "default",
+      "in": 18731,
+      "out": 11563,
+      "cost": 0.2203,
+      "file": "FN-6-001-050-3_20260702_115812_medium_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-3",
+      "when": "20260702_122113",
+      "effort": "medium",
+      "ci": "on",
+      "model": "gpt-5.4",
+      "tier": "default",
+      "in": 28835,
+      "out": 12856,
+      "cost": 0.2649,
+      "file": "FN-6-001-050-3_20260702_122113_medium_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-3",
+      "when": "20260702_223043",
+      "effort": "medium",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 26151,
+      "out": 10138,
+      "cost": 0.4349,
+      "file": "FN-6-001-050-3_20260702_223043_medium_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-3",
+      "when": "20260702_223428",
+      "effort": "medium",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 23940,
+      "out": 11272,
+      "cost": 0.4579,
+      "file": "FN-6-001-050-3_20260702_223428_medium_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-3",
+      "when": "20260702_225201",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 45161,
+      "out": 15457,
+      "cost": 0.6895,
+      "file": "FN-6-001-050-3_20260702_225201_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-3",
+      "when": "20260702_225652",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 46383,
+      "out": 26949,
+      "cost": 1.0404,
+      "file": "FN-6-001-050-3_20260702_225652_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-4",
+      "when": "20260702_091802",
+      "effort": "medium",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 33440,
+      "out": 12062,
+      "cost": 0.5291,
+      "file": "FN-6-001-050-4_20260702_091802_medium_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-4",
+      "when": "20260702_101946",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 49781,
+      "out": 21014,
+      "cost": 0.8793,
+      "file": "FN-6-001-050-4_20260702_101946_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-4",
+      "when": "20260702_114607",
+      "effort": "medium",
+      "ci": "on",
+      "model": "gpt-5.4",
+      "tier": "default",
+      "in": 12788,
+      "out": 14243,
+      "cost": 0.2456,
+      "file": "FN-6-001-050-4_20260702_114607_medium_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-4",
+      "when": "20260702_120131",
+      "effort": "medium",
+      "ci": "on",
+      "model": "gpt-5.4",
+      "tier": "default",
+      "in": 17950,
+      "out": 11737,
+      "cost": 0.2209,
+      "file": "FN-6-001-050-4_20260702_120131_medium_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-4",
+      "when": "20260702_122917",
+      "effort": "medium",
+      "ci": "on",
+      "model": "gpt-5.4",
+      "tier": "default",
+      "in": 33927,
+      "out": 11949,
+      "cost": 0.2641,
+      "file": "FN-6-001-050-4_20260702_122917_medium_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-4",
+      "when": "20260702_223522",
+      "effort": "medium",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 20485,
+      "out": 10502,
+      "cost": 0.4175,
+      "file": "FN-6-001-050-4_20260702_223522_medium_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-4",
+      "when": "20260702_224108",
+      "effort": "medium",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 29093,
+      "out": 14186,
+      "cost": 0.571,
+      "file": "FN-6-001-050-4_20260702_224108_medium_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-4",
+      "when": "20260702_230443",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 54842,
+      "out": 22300,
+      "cost": 0.9432,
+      "file": "FN-6-001-050-4_20260702_230443_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-4",
+      "when": "20260702_231001",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 57672,
+      "out": 29322,
+      "cost": 1.168,
+      "file": "FN-6-001-050-4_20260702_231001_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-5",
+      "when": "20260702_092302",
+      "effort": "medium",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 22106,
+      "out": 9736,
+      "cost": 0.4026,
+      "file": "FN-6-001-050-5_20260702_092302_medium_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-5",
+      "when": "20260702_103649",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 58008,
+      "out": 27450,
+      "cost": 1.1135,
+      "file": "FN-6-001-050-5_20260702_103649_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-5",
+      "when": "20260702_114900",
+      "effort": "medium",
+      "ci": "on",
+      "model": "gpt-5.4",
+      "tier": "default",
+      "in": 12403,
+      "out": 10009,
+      "cost": 0.1811,
+      "file": "FN-6-001-050-5_20260702_114900_medium_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-5",
+      "when": "20260702_120542",
+      "effort": "medium",
+      "ci": "on",
+      "model": "gpt-5.4",
+      "tier": "default",
+      "in": 26137,
+      "out": 12723,
+      "cost": 0.2562,
+      "file": "FN-6-001-050-5_20260702_120542_medium_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-5",
+      "when": "20260702_123555",
+      "effort": "medium",
+      "ci": "on",
+      "model": "gpt-5.4",
+      "tier": "default",
+      "in": 33139,
+      "out": 12696,
+      "cost": 0.2733,
+      "file": "FN-6-001-050-5_20260702_123555_medium_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-5",
+      "when": "20260702_224045",
+      "effort": "medium",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 25551,
+      "out": 9560,
+      "cost": 0.4146,
+      "file": "FN-6-001-050-5_20260702_224045_medium_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-5",
+      "when": "20260702_224628",
+      "effort": "medium",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 28400,
+      "out": 9137,
+      "cost": 0.4161,
+      "file": "FN-6-001-050-5_20260702_224628_medium_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-5",
+      "when": "20260702_231759",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 50473,
+      "out": 26786,
+      "cost": 1.0559,
+      "file": "FN-6-001-050-5_20260702_231759_high_CI-on_raw.json"
+    },
+    {
+      "stem": "FN-6-001-050-5",
+      "when": "20260702_232534",
+      "effort": "high",
+      "ci": "on",
+      "model": "gpt-5.5",
+      "tier": "default",
+      "in": 64106,
+      "out": 27587,
+      "cost": 1.1481,
+      "file": "FN-6-001-050-5_20260702_232534_high_CI-on_raw.json"
+    }
+  ],
+  "costs_batch": 28.05,
+  "costs_nonbatch": 51.17,
+  "generated_at": "2026-07-16T08:14:35.349808+00:00"
+}

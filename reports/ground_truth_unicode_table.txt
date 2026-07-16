@@ -1,0 +1,59 @@
+Ground-Truth Diacritic & Punctuation Sign Inventory
+Every combining mark, diacritic-bearing letter, modifier letter, and quotation/apostrophe-family character found inside {curly-brace} editorial annotations across Fn1.docx, Fn2.docx, Fn3.docx, Fn4.docx, Fn5.docx - generated 2026-07-15
+
+Precomposed vs. decomposed:
+Unicode offers two ways to write an accented letter. PRECOMPOSED gives one
+dedicated code point to a specific letter+diacritic pair (e.g. U+1E6D for ‘t
+with dot below’). DECOMPOSED instead writes the plain base letter followed by
+a separate combining mark (e.g. ‘t’ + U+0323 COMBINING DOT BELOW), which the
+font stacks onto whatever precedes it. Both render identically in a well-built
+font. Precomposed code points exist only for combinations common enough to
+have been given their own Unicode slot — which is why ‘t with dot below’ and
+‘b with dot below’ have unrelated-looking numbers even though both are built
+from the same dot-below mark. Rarer combinations (e.g. ‘d with line below’
+plus an extra dot below) have no dedicated slot and must fall back to the
+combining-mark route. A Character Name starting with ‘Combining’ below is one
+of these bare marks, not a full letter on its own.
+
+Sign  Unicode   Name                                         Count
+---------------------------------------------------------------------------
+ā     U+0101    Latin Small Letter A With Macron             685
+ʿ     U+02BF    Modifier Letter Left Half Ring               462
+ē     U+0113    Latin Small Letter E With Macron             300
+’     U+2019    Right Single Quotation Mark                  211
+ḥ     U+1E25    Latin Small Letter H With Dot Below          167
+Ḥ     U+1E24    Latin Capital Letter H With Dot Below        151
+ī     U+012B    Latin Small Letter I With Macron             121
+š     U+0161    Latin Small Letter S With Caron              87
+ṣ     U+1E63    Latin Small Letter S With Dot Below          85
+Ī     U+012A    Latin Capital Letter I With Macron           81
+ḏ     U+1E0F    Latin Small Letter D With Line Below         69
+◌̣    U+0323    Combining Dot Below                          64
+ṭ     U+1E6D    Latin Small Letter T With Dot Below          61
+ū     U+016B    Latin Small Letter U With Macron             53
+‘     U+2018    Left Single Quotation Mark                   53
+Ṣ     U+1E62    Latin Capital Letter S With Dot Below        53
+ḅ     U+1E05    Latin Small Letter B With Dot Below          52
+“     U+201C    Left Double Quotation Mark                   36
+”     U+201D    Right Double Quotation Mark                  36
+ṯ     U+1E6F    Latin Small Letter T With Line Below         35
+ḷ     U+1E37    Latin Small Letter L With Dot Below          32
+Ġ     U+0120    Latin Capital Letter G With Dot Above        29
+Š     U+0160    Latin Capital Letter S With Caron            27
+á     U+00E1    Latin Small Letter A With Acute              23
+ṃ     U+1E43    Latin Small Letter M With Dot Below          18
+Ṭ     U+1E6C    Latin Capital Letter T With Dot Below        17
+Ḏ     U+1E0E    Latin Capital Letter D With Line Below       16
+Ṯ     U+1E6E    Latin Capital Letter T With Line Below       14
+Ā     U+0100    Latin Capital Letter A With Macron           14
+ō     U+014D    Latin Small Letter O With Macron             8
+ġ     U+0121    Latin Small Letter G With Dot Above          7
+í     U+00ED    Latin Small Letter I With Acute              6
+é     U+00E9    Latin Small Letter E With Acute              5
+ê     U+00EA    Latin Small Letter E With Circumflex         2
+è     U+00E8    Latin Small Letter E With Grave              2
+Ū     U+016A    Latin Capital Letter U With Macron           2
+ï     U+00EF    Latin Small Letter I With Diaeresis          1
+à     U+00E0    Latin Small Letter A With Grave              1
+ʾ     U+02BE    Modifier Letter Right Half Ring              1
+ḍ     U+1E0D    Latin Small Letter D With Dot Below          1

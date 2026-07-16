@@ -1,0 +1,22 @@
+{
+  "source": "/Users/Yair/Documents/My Documents/Frank Stewart - Bedouin Transcription/Yair's Workflow/OpenAI_API/outputs/gpt-5.5_effort-high_CI-off/FN-6-001-050-1_20260701_015719.txt",
+  "generated_at": "2026-07-01T07:57:34.101209+00:00",
+  "module_version": "2.2",
+  "unicode_form": "NFC",
+  "profiles": [
+    "literal",
+    "normalized"
+  ],
+  "symbol_counts": {
+    "acute": 4,
+    "apostrophe-ayn": 11,
+    "dotbelow": 29,
+    "macron": 49
+  },
+  "n_flags": 0,
+  "flags": [],
+  "outputs": [
+    "/Users/Yair/Documents/My Documents/Frank Stewart - Bedouin Transcription/Yair's Workflow/OpenAI_API/outputs/gpt-5.5_effort-high_CI-off/FN-6-001-050-1_20260701_015719.literal.txt",
+    "/Users/Yair/Documents/My Documents/Frank Stewart - Bedouin Transcription/Yair's Workflow/OpenAI_API/outputs/gpt-5.5_effort-high_CI-off/FN-6-001-050-1_20260701_015719.normalized.txt"
+  ]
+}

@@ -1,0 +1,29 @@
+Subject: Batch API billing error — charged for retried/failed requests with zero output (refund request, ~$41.20)
+
+Org: org-BH1YvLA2OI41CevsyGEb5jp7 | Project: proj_eNdWq3WgIuAZZUILLVZLgU35 | Model: gpt-5.5-2026-04-23 (Batch API)
+
+CONTEXT
+I've used ChatGPT for years, but this is my first time building on the API, and I have several projects planned that depend on Batch API for cost efficiency. I budgeted based on the cost of successful, completed requests — not on an undisclosed retry multiplier that inflates the bill several times over for work that returns nothing. I'd appreciate this being looked at promptly so I can trust the numbers before scaling up further.
+
+SUMMARY
+Across 3 Batch API jobs on 2026-07-03/04, I was billed $43.58, but only 8 of 43 submitted requests actually completed and returned output (value: $2.38). The remaining ~$41.20 was charged for 89 total model executions against only 43 requests submitted — a 2.07x ratio (4.5x on one batch alone) — with no retry parameter or disclosure anywhere in the Batch API documentation. This is inconsistent with what OpenAI support has stated, that failed requests "without response or usage data are excluded from billing."
+
+BATCH IDS
+- batch_6a482b22b14481909cb74e9a61327845 — 20 submitted / 3 completed / 25 executions billed
+- batch_6a4858b31da081909c6abab3c42a7e74 — 17 submitted / 3 completed / 37 executions billed
+- batch_6a48a41f79348190a4b9921d50adad51 — 6 submitted / 2 completed / 27 executions billed (this batch ran on a fully funded balance, so its failures were NOT a low-credit issue — they were server-side 400/503 errors)
+
+On the first two batches, the failures reported as insufficient_quota were themselves a consequence of the internal retries draining the balance mid-run: each failed request was billed for the tokens it generated before the balance check failed.
+
+PROOF THE FAILURES WERE SERVER-SIDE, NOT USER ERROR
+File FN-0006 failed in the Batch API twice with HTTP 400 "issue with your request." The identical file, prompt, and model config were then submitted via the synchronous /v1/responses endpoint and completed successfully on the first attempt (39,807 in / 19,851 out tokens, $0.79). This confirms the input was valid and the Batch API's 400 response was a false, server-side error — and that false failure, retried internally, is what generated the bulk of these charges.
+
+DOCUMENTED PRECEDENT
+A materially identical case on the OpenAI Developer Community ("Batch API charged $212 for gpt-5.4-pro with zero completed results," Case ID 07830071) showed the same signature — requests submitted far below model executions billed, zero usable output — and OpenAI confirmed the bug and issued a full refund.
+
+REQUEST
+Per the billing principle that only completed requests are billable, I'm requesting a refund of $41.20 (the $43.58 billed minus the $2.38 value of the 8 requests that actually completed).
+
+I'd also like to know what concrete steps you'd recommend to prevent this from recurring — for example, whether there's a way to cap retries per batch, get notified before a retry storm drains a balance, or set a hard spending limit specific to the Batch API rather than the account overall.
+
+I have the full batch objects (request_counts + usage), output/error JSONL files, and raw /v1/organization/usage and /v1/organization/costs responses backing every figure above, and can provide any of these on request.

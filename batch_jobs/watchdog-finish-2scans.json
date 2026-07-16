@@ -1,0 +1,34 @@
+{
+  "job_name": "watchdog-finish-2scans",
+  "created_at": "2026-07-05T20:08:54.296410+00:00",
+  "config": {
+    "model": "gpt-5.5",
+    "effort": "high",
+    "use_ci": true,
+    "output_dir": "outputs/gpt-5.5_effort-high_CI-on",
+    "prompt_file": "Phase 1e - No Margins, No Apostrophe.txt"
+  },
+  "images": {
+    "FN-0015": {
+      "path": "/Users/Yair/Documents/My Documents/Frank Stewart - Bedouin Transcription/Yair's Workflow/OpenAI_API/scans/FN-0015.png",
+      "file_id": "file-4ydAqj369EbRkKi93qzBWt",
+      "custom_id": "req-FN-0015"
+    },
+    "FN-0016": {
+      "path": "/Users/Yair/Documents/My Documents/Frank Stewart - Bedouin Transcription/Yair's Workflow/OpenAI_API/scans/FN-0016.png",
+      "file_id": "file-DLkuBZmXv876sLD5XSDh9b",
+      "custom_id": "req-FN-0016"
+    }
+  },
+  "jsonl_path": "/Users/Yair/Documents/My Documents/Frank Stewart - Bedouin Transcription/Yair's Workflow/OpenAI_API/batch_jobs/watchdog-finish-2scans.jsonl",
+  "jsonl_file_id": "file-SVVQi8d7SbRwHCMUBpd65t",
+  "batch_id": "batch_6a4ab9e08a74819093e4e2b35f2e508f",
+  "status": "fetched",
+  "completed_at": null,
+  "output_file_id": null,
+  "error_file_id": "file-7a74uACzcGSxaLH6aUUkrG",
+  "needs_retry": [
+    "req-FN-0015",
+    "req-FN-0016"
+  ]
+}

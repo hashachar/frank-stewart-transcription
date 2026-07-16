@@ -1,0 +1,90 @@
+You are a research assistant with web search. I run a production pipeline on the
+OpenAI platform and have hit serious reliability and billing-instability problems.
+Research how other people/teams handle these problems and return concrete,
+sourced solutions and patterns. Cite real sources (OpenAI docs, OpenAI Developer
+Community threads, GitHub issues, engineering blog posts, tool docs). Do NOT just
+restate my mitigations back to me — assume the obvious ones are already done and
+focus on what experienced practitioners actually do. Where evidence is weak or
+anecdotal, say so.
+
+=== WHAT THE PIPELINE DOES ===
+Batch transcription of scanned handwritten manuscript page images into text.
+Each request = one page image + a text prompt; output = the transcription.
+Volume target is ~1,200 pages; I currently run these in small groups.
+
+=== TECHNICAL CONFIG (only the relevant bits) ===
+- API: OpenAI Batch API, endpoint /v1/responses, completion_window "24h".
+- File handling: each page image is uploaded to the Files API (purpose "vision"),
+  then referenced by file_id inside the batch JSONL (input_image, detail "high").
+- Model config: gpt-5.5 (dated snapshot), reasoning effort "high", with the
+  Code Interpreter tool enabled (container: auto). High-effort + CI => heavy,
+  slow, token-expensive requests.
+- Batch sizing: originally one large batch per job (Batch API allows up to 50k
+  requests/batch); I am now experimenting with a "fan-out" where each job submits
+  many independent batches, down to ONE request per batch, for fault isolation.
+
+=== THE INSTABILITY (concrete, from my own logs + OpenAI's usage/costs API) ===
+1. Very high failure rate. Across 14 batches: 75 requests submitted, only 12
+   completed, 42 failed. Most pages needed 3-6 attempts; the majority ultimately
+   only succeeded via the SYNCHRONOUS Responses API, not the Batch API.
+2. Opaque / inconsistent error types seen in batch error files:
+   - "You exceeded your current quota, please check your plan and billing
+     details" — appearing even when the account had ample prepaid balance.
+   - "There was an issue with your request. Please check your inputs and try
+     again" — on requests that were byte-identical to ones that later succeeded.
+   - "Our servers are currently overloaded", "The server had an error processing
+     your request", plain "unknown error".
+   - Empty failures: status_code 0, empty body, error: null — no diagnostic at all.
+   - Also incomplete/truncated/refusal/empty-text responses that came back 200
+     but with no usable output.
+3. Retry storms + overbilling. OpenAI internally (and undisclosed) retries failed
+   requests. Billed model executions ran 1.45x-2.1x the number of requests I
+   submitted. In one 2-day window: 43 submitted, 8 completed, 89 executions
+   billed, $43.58 charged, but the 8 completed outputs were worth only ~$2.38 —
+   i.e. ~$41 billed for work that returned NOTHING. Token bill was 4.81M in /
+   2.14M out while completed requests accounted for only 0.24M / 0.12M; the rest
+   was failed requests + hidden retries. This contradicts OpenAI's stated policy
+   that Batch billing is "based on token usage from completed requests" and that
+   failed requests without usage data "are excluded from billing." OpenAI later
+   applied ~$26 of refunds/credits after I disputed it.
+4. A batch that hits a quota/credit wall mid-run does NOT stop cheaply — failed
+   requests keep burning (and being billed for) reasoning + Code-Interpreter
+   tokens and get retried, turning a ~$10 job into ~$30.
+5. Latency: a 2-page batch recently sat in_progress ~125 minutes before both
+   requests failed with empty errors.
+6. The Admin usage/costs API (/v1/organization/usage, /v1/organization/costs)
+   intermittently returns 401, making live cost monitoring unreliable.
+
+=== WHAT I'VE ALREADY BUILT (don't just recommend these) ===
+Pre-submit balance guard; a live cost "watchdog" that aggregates request counts
+and billed cost and auto-cancels on failure-ratio / retry-storm-multiplier /
+cost-per-page / spend-ceiling / stall signatures; a reconciling cost+status
+ledger; and an automatic synchronous fallback for pages the batch path can't land.
+
+=== QUESTIONS TO RESEARCH ===
+1. How do practitioners deal with OpenAI Batch API instability at scale — high
+   failure rates, opaque errors, and internal retry storms? What concrete
+   patterns, batch-sizing strategies, and orchestration setups do they use?
+2. Batch API vs. synchronous Responses API with client-side concurrency +
+   backoff: given a ~50%+ batch failure rate on heavy reasoning+tool requests,
+   when is Batch actually worth the 50% discount, and when do people abandon it?
+3. Does one-request-per-batch (or small batches) meaningfully reduce retry-storm
+   billing and blast radius, or just multiply overhead? Any real reports?
+4. Overbilling for failed requests: how common is this, how do people detect and
+   dispute it, and what evidence does OpenAI accept? Is it a known issue with
+   reasoning models + Code Interpreter specifically?
+5. "Exceeded your current quota" errors that fire despite a funded prepaid
+   balance — what actually causes this (rate/queue limits vs. credit), and how do
+   people avoid it mid-batch?
+6. Relevant OpenAI features/tiers that improve reliability or cost predictability
+   (e.g. Flex/priority processing tiers, prompt caching, service-tier options),
+   and whether they apply to Batch + reasoning + Code Interpreter.
+7. Third-party reliability/orchestration layers people rely on (gateways,
+   proxies, queue frameworks, multi-provider routers) and honest pros/cons.
+8. Provider diversification / fallback for image-heavy transcription — is moving
+   some load off OpenAI a common answer, and to what?
+
+Prioritize solutions proven in production. For each, note effort, tradeoffs, and
+whether it targets reliability, cost, or both. End with a short ranked shortlist
+of what you'd try first for a ~1,200-page, high-effort + Code-Interpreter,
+image-input transcription workload.

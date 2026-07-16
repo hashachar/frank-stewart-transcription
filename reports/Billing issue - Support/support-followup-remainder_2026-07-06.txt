@@ -1,0 +1,26 @@
+Subject: Follow-up — Batch API overbilling, remaining balance (~$24.64)
+
+Thank you for the $25.98 credit issued on 2026-07-04. It covers only part of the Batch API overbilling, so I'm following up on the balance — including additional batches from the same underlying issue that were not in the original claim.
+
+The problem is consistent across all my gpt-5.5 batch jobs: I'm billed for failed / retried model executions that return no output. Per the principle that only completed requests are billable, that spend should not stand.
+
+(A) ORIGINAL CLAIM — 3 batches, 2026-07-03/04 (partly refunded):
+  - batch_6a482b22b14481909cb74e9a61327845
+  - batch_6a4858b31da081909c6abab3c42a7e74
+  - batch_6a48a41f79348190a4b9921d50adad51
+  43 requests submitted, 89 model executions billed, only 8 completed.
+  $43.58 billed vs $2.38 of completed output  ->  $41.20 waste.
+
+(B) ADDITIONAL — 3 later batches, same issue, NOT in the original claim:
+  - batch_6a4a88b1fe808190932d7f6118aff131  — 5 submitted / 3 completed / 8 executions
+  - batch_6a4ab9e08a74819093e4e2b35f2e508f  — 2 submitted / 0 completed / 3 executions
+  - batch_6a4b2edbc56c819092cd1ca72f05a5e5  — 7 submitted / 0 completed / 9 executions
+  14 requests submitted, 20 model executions billed, only 3 completed.
+  ~$10.35 billed vs ~$0.93 of completed output  ->  ~$9.42 waste.
+
+TOTAL documented waste: $41.20 + $9.42 = $50.62.
+Less the $25.98 already refunded = $24.64 outstanding.
+
+Could you please apply the remaining $24.64? Happy to provide the batch objects, output/error files, and usage data for any of the above.
+
+Org: org-BH1YvLA2OI41CevsyGEb5jp7 | Project: proj_eNdWq3WgIuAZZUILLVZLgU35

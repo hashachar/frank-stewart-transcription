@@ -1,0 +1,20 @@
+{
+  "source": "outputs/gpt-5.5_effort-high_CI-on/FN-0019_20260706_004418.txt",
+  "generated_at": "2026-07-06T22:29:06.829133+00:00",
+  "module_version": "2.4",
+  "unicode_form": "NFC",
+  "profiles": [
+    "literal",
+    "normalized"
+  ],
+  "symbol_counts": {
+    "acute": 1,
+    "dotbelow": 18,
+    "macron": 38
+  },
+  "n_flags": 0,
+  "flags": [],
+  "outputs": [
+    "outputs/gpt-5.5_effort-high_CI-on/phase2/FN-0019_20260706_004418.gpt-5.5_effort-high_CI-on.literal.txt"
+  ]
+}

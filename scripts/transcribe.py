@@ -16,7 +16,25 @@ load_dotenv()
 # request (including a Flex "resource unavailable" 429) raises immediately and is
 # NOT silently re-run, so we never pay for anything beyond the single request we
 # issued. Any retry is a manual, deliberate decision.
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"), timeout=1800.0, max_retries=0)
+#
+# timeout: a client timeout does NOT cancel the request server-side — the model
+# finishes and bills anyway, we just never see the output. So the timeout must
+# exceed the slowest plausible request or we pay for work we throw away. Measured:
+# high effort median ~10 min / max ~21 min; xhigh ~24 min of execution ALONE, and
+# Flex adds queue time on top of that. Hence 60 min, not the original 30.
+DEFAULT_TIMEOUT = 3600.0
+_client = None
+
+
+def get_client(timeout: float = DEFAULT_TIMEOUT):
+    global _client
+    if _client is None:
+        _client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"), timeout=timeout,
+                         max_retries=0)
+    return _client
+
+
+client = get_client()
 
 BASE        = Path(__file__).resolve().parent.parent
 PROMPT_DIR  = BASE / "prompt"
@@ -70,6 +88,11 @@ def parse_args():
                     help="Cap the number of Code Interpreter calls per response (default: unlimited)")
     ap.add_argument("--prompt", type=str, default=None,
                     help="Prompt filename stem or prefix (e.g. 'Phase 1e') in the prompt folder (default: first file found)")
+    ap.add_argument("--timeout", type=float, default=DEFAULT_TIMEOUT,
+                    help=f"Client timeout in seconds (default: {DEFAULT_TIMEOUT:.0f}). A "
+                         "timeout does NOT cancel the request server-side — it still "
+                         "bills — so set this ABOVE the slowest plausible request. "
+                         "xhigh + Flex can exceed 30 min.")
     return ap.parse_args()
 
 
@@ -106,6 +129,9 @@ def _create_with_flex_backoff(create_kwargs, max_attempts, base_delay=15.0, max_
 def main():
     args = parse_args()
     use_ci = not args.no_ci
+    global client
+    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"), timeout=args.timeout,
+                    max_retries=0)
 
     # Auto-name output folder from parameters if not specified
     if args.outdir is None:

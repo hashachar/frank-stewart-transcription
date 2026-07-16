@@ -1,0 +1,26 @@
+{
+  "job_name": "rerun-fn0010",
+  "created_at": "2026-07-07T02:12:31.710678+00:00",
+  "config": {
+    "model": "gpt-5.5",
+    "effort": "high",
+    "use_ci": true,
+    "output_dir": "outputs/gpt-5.5_effort-high_CI-on",
+    "prompt_file": "Phase 1e - No Margins, No Apostrophe.txt"
+  },
+  "images": {
+    "FN-0010": {
+      "path": "/Users/Yair/Documents/My Documents/Frank Stewart - Bedouin Transcription/Yair's Workflow/OpenAI_API/scans/FN-0010.png",
+      "file_id": "file-PkjfvNSbFzqWuEeEM8bFj8",
+      "custom_id": "req-FN-0010"
+    }
+  },
+  "jsonl_path": "/Users/Yair/Documents/My Documents/Frank Stewart - Bedouin Transcription/Yair's Workflow/OpenAI_API/batch_jobs/rerun-fn0010.jsonl",
+  "jsonl_file_id": "file-WwTafRJTPo6gTpZAJNjXNU",
+  "batch_id": "batch_6a4c6094c90c8190a9f9eb30b08a3afa",
+  "status": "fetched",
+  "completed_at": null,
+  "output_file_id": "file-LrBoNeJLfdFVzWUNR2AWJ6",
+  "error_file_id": null,
+  "needs_retry": []
+}

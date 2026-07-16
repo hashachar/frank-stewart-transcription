@@ -1,0 +1,244 @@
+
+Produce an exact transcription of the final the attached typewritten ethnographic field notes
+
+Your highest priority is correct identification of every printed character, especially characters with diacritical marks.
+
+Do not normalize, correct, complete, modernize, infer, or "fix" any text. Reproduce unusual spellings exactly as printed. Never normalize transliterated Arabic names or words.
+
+Exclude deleted, struck-through, or overtyped text from the main transcription.
+
+---
+
+## Priority
+
+1. Correct identification of every printed character.
+2. Correct identification of every diacritical mark.
+3. Correct application of the required replacement notation.
+4. Preserve reading order.
+5. Preserve structural markers.
+6. Record handwritten marginalia.
+
+---
+
+## Structural markers
+
+Preserve document structure using only the following markers:
+
+* `{HEADING}...{/HEADING}` — Surround any underlined typewritten heading with these markers. Use the markers only around the text that is underlined, not the entire line unless the entire line is underlined.
+* {LB} — Original line break. Output one {LB} for each line break in the source. Consecutive line breaks should be represented by consecutive {LB} markers (for example, one blank line between two lines of text is represented as {LB}{LB}; two blank lines should be represented as {LB}{LB}{LB}, etc.)
+* `{INDENT}` — A line that begins with a visually meaningful indentation relative to the surrounding text.
+
+`{INDENT}` may appear only at the beginning of a line, immediately after `{LB}` (or at the beginning of the transcription if the first line is indented). Do not use `{INDENT}` to represent internal spacing within a line.
+
+Use these markers only where they appear in the source. Do not invent additional structural markers.
+
+---
+
+## Character replacement rules
+
+Apply these replacement rules only within `===BODY===` and `===MARGIN===`.
+
+Replace every occurrence of the following characters or printed forms with the exact notation shown. The original characters listed below must never appear in the output.
+
+Perform these replacements only after correctly identifying the original printed character. Do not replace ordinary Latin letters with notation unless the corresponding diacritic is actually present.
+
+---
+
+### Macron
+
+ā → a{macron}
+
+Ā → A{macron}
+
+ē → e{macron}
+
+Ē → E{macron}
+
+ī → i{macron}
+
+Ī → I{macron}
+
+ū → u{macron}
+
+Ū → U{macron}
+
+ō → o{macron}
+
+d̄ → d{macron}
+
+D̄ → D{macron}
+
+---
+
+### Macron + cedilla
+
+Lowercase a with both macron above and cedilla below → a{macron}{cedilla}
+
+This is rare. Treat it as a single printed character carrying both marks.
+
+---
+
+### Dot below
+
+ṭ → t{dotbelow}
+
+Ṭ → T{dotbelow}
+
+ḥ → h{dotbelow}
+
+Ḥ → H{dotbelow}
+
+ṣ → s{dotbelow}
+
+Ṣ → S{dotbelow}
+
+ḍ → d{dotbelow}
+
+Ḍ → D{dotbelow}
+
+ṛ → r{dotbelow}
+
+Ṛ → R{dotbelow}
+
+ḅ → b{dotbelow}
+
+ṃ → m{dotbelow}
+
+ḷ → l{dotbelow}
+
+ẓ → z{dotbelow}
+
+Ẓ → Z{dotbelow}
+
+---
+
+### Macron + dot below
+
+These are characters or printed forms that contain both a macron above and a dot below. Treat them as containing both diacritical marks.
+
+Lowercase d with both a macron above and a dot below → d{macron}{dotbelow}
+
+Uppercase D with both a macron above and a dot below → D{macron}{dotbelow}
+
+Alternative uppercase form: an overtyped uppercase D with an additional horizontal stroke through the middle and a dot below → D{macron}{dotbelow}
+
+Pay particular attention to these characters, as OCR models often identify only one of the two diacritical marks.
+
+---
+
+### Acute
+
+á → a{acute}
+
+í → i{acute}
+
+ú → u{acute}
+
+š → s{acute}
+
+Š → S{acute}
+
+ś → s{acute}
+
+Ś → S{acute}
+
+---
+
+### Cedilla
+
+Ş → S{cedilla}
+
+---
+
+### Dot above
+
+ġ → g{dotabove}
+
+Ġ → G{dotabove}
+
+---
+
+### Standalone
+
+θ → {theta-symbol}
+
+
+## Apostrophe rule
+
+Convert apostrophes immediately preceding an Arabic transliterated letter sequence into `{apostrophe-ayn}`.
+
+Example:
+
+`'Awdih` → `{apostrophe-ayn}Awdih`
+
+If the transliterated word takes an English possessive, convert only the transliterated apostrophe.
+
+Example:
+
+`Ji'mih's` → `Ji{apostrophe-ayn}mih's`
+
+Do not convert apostrophes used in ordinary English.
+
+Examples:
+
+don't
+didn't
+it's
+I've
+woman's
+
+---
+
+## Uncertain or illegible text
+
+If a character cannot be read confidently, transcribe it as:
+
+`[?]`
+
+Use the same convention for partially illegible words.
+
+Do not guess missing letters.
+
+Never infer missing letters or words from context.
+
+For example, if the page reads
+
+`Salmn`
+
+output
+
+`Salmn`
+
+—not "Salman."
+
+---
+
+## Reading order
+
+Transcribe the document in normal reading order from top to bottom and left to right.
+
+---
+
+## Output
+
+### `===BODY===`
+
+Transcribe only the final readable typewritten text.
+
+Exclude deleted, struck-through, and overtyped text.
+
+Use the structural markers defined above.
+
+### `===MARGIN===`
+
+Record one handwritten or marginal note per line.
+
+Begin each entry with one of the following location labels:
+
+Top margin:
+Bottom margin:
+Left margin:
+Right margin:
+Interlinear:
+
+Include the handwritten text exactly as written, using the same character replacement rules where applicable.
