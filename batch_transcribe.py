@@ -83,6 +83,9 @@ MIME = {
 
 # Standard per-1M-token rates; batch = 50% off
 MODEL_PRICING = {
+    "gpt-5.6-sol":   (5.00,  30.00),
+    "gpt-5.6-terra": (2.50,  15.00),
+    "gpt-5.6-luna":  (1.00,   6.00),
     "gpt-5.5":     (5.00,  30.00),
     "gpt-5.4":     (2.50,  15.00),
     "gpt-5.4-pro": (2.50,  15.00),
@@ -1297,7 +1300,10 @@ _SYNC_LOG_RE = re.compile(
 
 def _scan_sync_logs():
     """Per-request records of synchronous /v1/responses runs, parsed from the raw
-    JSON logs. Priced at STANDARD (non-batch) rates. Durable + local."""
+    JSON logs. Priced at STANDARD rates, EXCEPT Flex-tier runs (service_tier=flex),
+    which are billed at 50% off — the same discount as batch — so they reuse the
+    batch-rate path. Older logs without a service_tier default to full rate. Durable
+    + local."""
     out = []
     for p in sorted(LOGS_DIR.glob("*_raw.json")):
         if p.name.endswith("_batch_raw.json"):
@@ -1314,10 +1320,15 @@ def _scan_sync_logs():
         ot = u.get("output_tokens", 0) or 0
         rt = (u.get("output_tokens_details") or {}).get("reasoning_tokens", 0) or 0
         pkey = _pricing_key(data.get("model", "") or "")
-        cost, *_ = _cost_line(it, ot, rt, pkey, batch=False)   # synchronous = full standard rate
+        tier = (data.get("service_tier") or "default")
+        is_flex = (tier == "flex")
+        # Flex bills at the same 50%-off rate as batch, so route flex through the
+        # batch-rate path; everything else stays at full standard rate.
+        cost, *_ = _cost_line(it, ot, rt, pkey, batch=is_flex)
         out.append({"stem": m.group("stem"),
                     "when": f"{m.group('date')}_{m.group('time')}",
                     "effort": m.group("effort"), "ci": m.group("ci"), "model": pkey,
+                    "tier": tier,
                     "in": it, "out": ot, "cost": round(cost, 4), "file": p.name})
     return out
 
@@ -1492,8 +1503,8 @@ def _render_ledger_md(ledger):
                 d["failed"] += 1
                 d["hist"].append(f"{label}:✗({s['reason'] or 'failed'})")
 
-    # Fold synchronous (non-batch) runs in — completed attempts at standard rates
-    # (no storm overhead, so out_cost == est_cost == the run's own cost).
+    # Fold synchronous (non-batch) runs in — completed attempts (standard rate, or
+    # 50% off for flex-tier runs); no storm overhead, so out_cost == est_cost.
     sync = ledger.get("sync", [])
     sync_total = round(sum(s["cost"] for s in sync), 2)
     for s in sync:
@@ -1502,7 +1513,8 @@ def _render_ledger_md(ledger):
         d["completed"] += 1
         d["out_cost"]  += s["cost"]
         d["est_cost"]  += s["cost"]
-        d["hist"].append(f"sync[{s['effort']}]:✓${s['cost']:.2f}")
+        tier_tag = ",flex" if s.get("tier") == "flex" else ""
+        d["hist"].append(f"sync[{s['effort']}{tier_tag}]:✓${s['cost']:.2f}")
 
     L = []
     L.append("# OpenAI Batch Ledger")
@@ -1544,9 +1556,11 @@ def _render_ledger_md(ledger):
         for s in sync:
             g = by_scan.setdefault(s["stem"], {"runs": 0, "cost": 0.0, "cfgs": set()})
             g["runs"] += 1; g["cost"] += s["cost"]
-            g["cfgs"].add(f"{s['effort']}/{'CI' if s['ci']=='on' else 'no-CI'}")
+            tier_tag = "/flex" if s.get("tier") == "flex" else ""
+            g["cfgs"].add(f"{s['effort']}/{'CI' if s['ci']=='on' else 'no-CI'}{tier_tag}")
         L.append("## Synchronous (non-batch) requests")
-        L.append(f"_{len(sync)} runs, ${sync_total:,.2f} total — priced at full standard rates._\n")
+        L.append(f"_{len(sync)} runs, ${sync_total:,.2f} total — standard rate, except "
+                 f"flex-tier runs at 50% off._\n")
         L.append("| Scan | Runs | Configs | Total $ |")
         L.append("|---|---|---|---|")
         for stem in sorted(by_scan):
